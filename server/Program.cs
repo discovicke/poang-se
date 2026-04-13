@@ -1,18 +1,20 @@
-using Npgsql;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 using DotNetEnv;
+using server.Endpoints;
+using server.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
 Env.Load();
 
-var connString = new Connection().ToString(); 
+var connString = new Connection().ToString();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connString));
 
 
+builder.Services.AddScoped<PlayerServices>();
+builder.Services.AddScoped<ScoreServices>();
 
 builder.Services.AddCors(options =>
 {
@@ -25,6 +27,9 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+app.PlayerEndpoints();
+app.ScoreEndpoints();
 
 app.UseCors();
 app.UseStaticFiles();
