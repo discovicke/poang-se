@@ -13,7 +13,7 @@ public static class PlayerEndpointMapper
             {
                 Id = Guid.NewGuid(),
                 UserName = playerDto.UserName,
-                CreatedAt = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"),
+                CreatedAt = DateTime.UtcNow,
                 Scores = []
             };
 
