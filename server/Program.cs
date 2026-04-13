@@ -1,6 +1,4 @@
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
-
 
 builder.Services.AddCors(options =>
 {
@@ -12,9 +10,10 @@ builder.Services.AddCors(options =>
     });
 });
 
+var app = builder.Build();
 
+app.UseCors();
 app.UseStaticFiles();
-
 
 app.MapGet("/", () => "Hello World!");
 
