@@ -5,7 +5,8 @@ using server.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
-Env.Load();
+var envPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".env"));
+Env.Load(envPath);
 
 var connString = new Connection().ToString();
 
