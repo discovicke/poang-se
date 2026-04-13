@@ -21,6 +21,12 @@ public static class PlayerEndpointMapper
             return Results.Created($"/players/{player.Id}", player);
         });
 
+        app.MapGet("/players", async (PlayerServices playerServices) =>
+        {
+            var players = await playerServices.GetAllPlayers();
+            return Results.Ok(players);
+        });
+
         return app;
     }
 }
