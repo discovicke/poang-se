@@ -1,4 +1,5 @@
-﻿using server.Dtos;
+﻿using Microsoft.EntityFrameworkCore;
+using server.Dtos;
 
 namespace server.Service;
 
@@ -8,5 +9,9 @@ public class PlayerServices(AppDbContext db)
     {
         db.Players.Add(player);
         await db.SaveChangesAsync();
+    }
+    public async Task <List<Player>> GetAllPlayers()
+    {
+        return await db.Players.ToListAsync();
     }
 }
