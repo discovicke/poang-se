@@ -48,7 +48,19 @@ namespace server.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double?>("CumulativeValue")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("Round")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("TeamId")
                         .HasColumnType("uuid");
 
                     b.Property<double>("Value")
@@ -56,22 +68,174 @@ namespace server.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("GameId");
+
                     b.HasIndex("PlayerId");
+
+                    b.HasIndex("TeamId");
 
                     b.ToTable("Scores");
                 });
 
+            modelBuilder.Entity("server.Models.Game", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("LowerIsBetter")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("MaxRounds")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("WinnerId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Games");
+                });
+
+            modelBuilder.Entity("server.Models.GamePlayer", b =>
+                {
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("JoinedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("TeamId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("GameId", "PlayerId");
+
+                    b.HasIndex("PlayerId");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("GamePlayers");
+                });
+
+            modelBuilder.Entity("server.Models.Team", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("Teams");
+                });
+
             modelBuilder.Entity("Score", b =>
                 {
-                    b.HasOne("Player", null)
+                    b.HasOne("server.Models.Game", "Game")
+                        .WithMany("Scores")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Player", "Player")
                         .WithMany("Scores")
                         .HasForeignKey("PlayerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("server.Models.Team", "Team")
+                        .WithMany("Scores")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Player");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("server.Models.GamePlayer", b =>
+                {
+                    b.HasOne("server.Models.Game", "Game")
+                        .WithMany("GamePlayers")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Player", "Player")
+                        .WithMany("GamePlayers")
+                        .HasForeignKey("PlayerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("server.Models.Team", "Team")
+                        .WithMany("GamePlayers")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Player");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("server.Models.Team", b =>
+                {
+                    b.HasOne("server.Models.Game", "Game")
+                        .WithMany("Teams")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
                 });
 
             modelBuilder.Entity("Player", b =>
                 {
+                    b.Navigation("GamePlayers");
+
+                    b.Navigation("Scores");
+                });
+
+            modelBuilder.Entity("server.Models.Game", b =>
+                {
+                    b.Navigation("GamePlayers");
+
+                    b.Navigation("Scores");
+
+                    b.Navigation("Teams");
+                });
+
+            modelBuilder.Entity("server.Models.Team", b =>
+                {
+                    b.Navigation("GamePlayers");
+
                     b.Navigation("Scores");
                 });
 #pragma warning restore 612, 618
