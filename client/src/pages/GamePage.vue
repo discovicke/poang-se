@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import {ref, computed, onMounted, onBeforeUnmount} from 'vue'
 import * as signalR from '@microsoft/signalr'
+
 const props = defineProps<{ id: string }>()
 
 interface Team {
@@ -53,9 +54,9 @@ const scoreValue = ref<number>(0)
 const scoreRound = ref<number | null>(null)
 const scoreTeamId = ref<string | null>(null)
 
-
-
 const connection = ref<signalR.HubConnection | null>(null)
+const claim = ref<{ gameId: string; playerId: string | null; playerName: string | null } | null>(null)
+const showClaimPicker = ref(false)
 
 async function fetchGame() {
   const res = await fetch(`/api/games/${props.id}`)
@@ -73,8 +74,8 @@ async function addTeam() {
   if (!newTeamName.value.trim()) return
   await fetch(`/api/games/${props.id}/teams`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: newTeamName.value }),
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name: newTeamName.value}),
   })
   newTeamName.value = ''
   await fetchGame()
@@ -84,7 +85,7 @@ async function addPlayer() {
   if (!newPlayerName.value.trim()) return
   await fetch(`/api/games/${props.id}/players/new`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       userName: newPlayerName.value.trim(),
       teamId: selectedTeamId.value || null,
@@ -99,7 +100,7 @@ async function addScore() {
   if (!scorePlayerId.value) return
   await fetch(`/api/games/${props.id}/scores`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       playerId: scorePlayerId.value,
       teamId: scoreTeamId.value || null,
@@ -113,12 +114,12 @@ async function addScore() {
 }
 
 async function startGame() {
-  await fetch(`/api/games/${props.id}/start`, { method: 'PUT' })
+  await fetch(`/api/games/${props.id}/start`, {method: 'PUT'})
   await fetchGame()
 }
 
 async function finishGame() {
-  await fetch(`/api/games/${props.id}/finish`, { method: 'PUT' })
+  await fetch(`/api/games/${props.id}/finish`, {method: 'PUT'})
   await fetchGame()
 }
 
@@ -126,7 +127,7 @@ const scoreboard = computed(() => {
   if (!game.value) return []
   const map = new Map<string, { playerId: string; name: string; teamName: string | null; total: number }>()
   for (const p of game.value.players) {
-    map.set(p.playerId, { playerId: p.playerId, name: p.playerName, teamName: p.teamName, total: 0 })
+    map.set(p.playerId, {playerId: p.playerId, name: p.playerName, teamName: p.teamName, total: 0})
   }
   for (const s of game.value.scores) {
     const entry = map.get(s.playerId)
@@ -147,23 +148,49 @@ function statusBadge(status: string) {
   return `badge badge-${status.toLowerCase()}`
 }
 
-onMounted(async () => {
+async function claimPlayer(playerId: string | null) {
+  showClaimPicker.value = false
+  await connectHub(playerId ?? undefined)
+}
 
-  await load()
+
+async function connectHub(playerId?: string) {
+  const url = playerId
+    ? `/gamehub?gameId=${props.id}&playerId=${playerId}`
+    : `/gamehub?gameId=${props.id}`
 
   connection.value = new signalR.HubConnectionBuilder()
-    .withUrl('/gamehub')
+    .withUrl(url)
     .withAutomaticReconnect()
     .build()
 
-    connection.value.on('ScoreAdded', async (newScore: ScoreEntry) => {
-      if(!game.value) return
-      game.value.scores.push(newScore)
-      fetchGame()
-})
+  connection.value.on('ClaimAccepted', (c) => {
+    claim.value = c
+    localStorage.setItem(`claim:${props.id}`, JSON.stringify(c))
+  })
+
+  connection.value.on('ScoreAdded', async (newScore: ScoreEntry) => {
+    if (!game.value) return
+    game.value.scores.push(newScore)
+    fetchGame()
+  })
+
   await connection.value.start()
-  await connection.value.invoke('JoinGame', props.id)
+}
+
+
+onMounted(async () => {
+  await load()
+
+  const stored = localStorage.getItem(`claim:${props.id}`)
+  if (stored) {
+    const parsed = JSON.parse(stored)
+    await connectHub(parsed.playerId ?? undefined)
+  } else {
+    showClaimPicker.value = true
+  }
 })
+
 onBeforeUnmount(async () => {
   if (connection.value) {
     await connection.value.invoke('LeaveGame', props.id)
@@ -174,6 +201,16 @@ onBeforeUnmount(async () => {
 
 <template>
   <div class="page">
+    <div v-if="showClaimPicker && game" class="card">
+      <h2>Vem är du?</h2>
+      <div class="claim-buttons">
+        <button v-for="p in game.players" :key="p.playerId" class="btn-primary" @click="claimPlayer(p.playerId)">
+          {{ p.playerName }}
+        </button>
+        <button class="btn-secondary" @click="claimPlayer(null)">👁 Jag är åskådare</button>
+      </div>
+    </div>
+
     <router-link to="/" class="back-link">← Tillbaka</router-link>
 
     <div v-if="loading" class="card">Laddar...</div>
@@ -195,7 +232,7 @@ onBeforeUnmount(async () => {
       <div v-if="game.status === 'Finished'" class="winner-banner">
         <strong>Spelet avslutat!</strong>
         <span v-if="winnerName"> Vinnare: <strong>{{ winnerName }}</strong></span>
-        <br />
+        <br/>
         <small class="text-muted">Avslutat: {{ new Date(game.finishedAt!).toLocaleString('sv-SE') }}</small>
       </div>
 
@@ -215,7 +252,7 @@ onBeforeUnmount(async () => {
         </ul>
         <p v-else class="empty">Inga lag (individuellt spel)</p>
         <form v-if="game.status === 'Waiting'" @submit.prevent="addTeam" class="form-row">
-          <input v-model="newTeamName" placeholder="Lagnamn" />
+          <input v-model="newTeamName" placeholder="Lagnamn"/>
           <button type="submit" class="btn-primary">Lägg till lag</button>
         </form>
       </div>
@@ -225,24 +262,24 @@ onBeforeUnmount(async () => {
         <h2>Spelare i spelet</h2>
         <table v-if="game.players.length">
           <thead>
-            <tr>
-              <th>Spelare</th>
-              <th>Lag</th>
-              <th>Gick med</th>
-            </tr>
+          <tr>
+            <th>Spelare</th>
+            <th>Lag</th>
+            <th>Gick med</th>
+          </tr>
           </thead>
           <tbody>
-            <tr v-for="p in game.players" :key="p.playerId">
-              <td>{{ p.playerName }}</td>
-              <td>{{ p.teamName ?? '–' }}</td>
-              <td class="text-muted">{{ new Date(p.joinedAt).toLocaleString('sv-SE') }}</td>
-            </tr>
+          <tr v-for="p in game.players" :key="p.playerId">
+            <td>{{ p.playerName }}</td>
+            <td>{{ p.teamName ?? '–' }}</td>
+            <td class="text-muted">{{ new Date(p.joinedAt).toLocaleString('sv-SE') }}</td>
+          </tr>
           </tbody>
         </table>
         <p v-else class="empty">Inga spelare ännu.</p>
 
         <form v-if="game.status !== 'Finished'" @submit.prevent="addPlayer" class="form-row">
-          <input v-model="newPlayerName" placeholder="Spelarnamn" />
+          <input v-model="newPlayerName" placeholder="Spelarnamn"/>
           <select v-model="selectedTeamId" v-if="game.teams.length">
             <option :value="null">Inget lag</option>
             <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -256,23 +293,23 @@ onBeforeUnmount(async () => {
         <h2>Ställning</h2>
         <table v-if="scoreboard.length">
           <thead>
-            <tr>
-              <th>#</th>
-              <th>Spelare</th>
-              <th>Lag</th>
-              <th class="text-right">Total</th>
-            </tr>
+          <tr>
+            <th>#</th>
+            <th>Spelare</th>
+            <th>Lag</th>
+            <th class="text-right">Total</th>
+          </tr>
           </thead>
           <tbody>
-            <tr v-for="(s, i) in scoreboard" :key="s.playerId" :class="{ 'winner-row': s.playerId === game.winnerId }">
-              <td>{{ i + 1 }}</td>
-              <td>
-                {{ s.name }}
-                <span v-if="s.playerId === game.winnerId"> 🏆</span>
-              </td>
-              <td>{{ s.teamName ?? '–' }}</td>
-              <td class="text-right">{{ s.total }}</td>
-            </tr>
+          <tr v-for="(s, i) in scoreboard" :key="s.playerId" :class="{ 'winner-row': s.playerId === game.winnerId }">
+            <td>{{ i + 1 }}</td>
+            <td>
+              {{ s.name }}
+              <span v-if="s.playerId === game.winnerId"> 🏆</span>
+            </td>
+            <td>{{ s.teamName ?? '–' }}</td>
+            <td class="text-right">{{ s.total }}</td>
+          </tr>
           </tbody>
         </table>
         <p v-else class="empty">Inga poäng ännu.</p>
@@ -298,11 +335,11 @@ onBeforeUnmount(async () => {
           </div>
           <div class="label">
             Runda
-            <input type="number" v-model.number="scoreRound" min="1" />
+            <input type="number" v-model.number="scoreRound" min="1"/>
           </div>
           <div class="label">
             Poäng
-            <input type="number" v-model.number="scoreValue" step="any" />
+            <input type="number" v-model.number="scoreValue" step="any"/>
           </div>
           <button type="submit" class="btn-success" :disabled="!scorePlayerId">Registrera poäng</button>
         </form>
@@ -313,22 +350,22 @@ onBeforeUnmount(async () => {
         <h2>Poänghistorik</h2>
         <table v-if="game.scores.length">
           <thead>
-            <tr>
-              <th>Runda</th>
-              <th>Spelare</th>
-              <th class="text-right">Poäng</th>
-              <th class="text-right">Ack. total</th>
-              <th>Tid</th>
-            </tr>
+          <tr>
+            <th>Runda</th>
+            <th>Spelare</th>
+            <th class="text-right">Poäng</th>
+            <th class="text-right">Ack. total</th>
+            <th>Tid</th>
+          </tr>
           </thead>
           <tbody>
-            <tr v-for="s in game.scores" :key="s.id">
-              <td>{{ s.round ?? '–' }}</td>
-              <td>{{ s.playerName }}</td>
-              <td class="text-right">{{ s.value }}</td>
-              <td class="text-right">{{ s.cumulativeValue }}</td>
-              <td class="text-muted">{{ new Date(s.createdAt).toLocaleString('sv-SE') }}</td>
-            </tr>
+          <tr v-for="s in game.scores" :key="s.id">
+            <td>{{ s.round ?? '–' }}</td>
+            <td>{{ s.playerName }}</td>
+            <td class="text-right">{{ s.value }}</td>
+            <td class="text-right">{{ s.cumulativeValue }}</td>
+            <td class="text-muted">{{ new Date(s.createdAt).toLocaleString('sv-SE') }}</td>
+          </tr>
           </tbody>
         </table>
         <p v-else class="empty">Inga poäng registrerade ännu.</p>
