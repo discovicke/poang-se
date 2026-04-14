@@ -41,6 +41,7 @@ interface Game {
   players: GamePlayer[]
   scores: ScoreEntry[]
 }
+const shareUrl = computed(() => `${window.location.origin}/games/${props.id}`)
 
 const game = ref<Game | null>(null)
 const loading = ref(true)
@@ -153,6 +154,15 @@ async function claimPlayer(playerId: string | null) {
   await connectHub(playerId ?? undefined)
 }
 
+async function copyShareLink() {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    alert('Länk till match kopierad!')
+  } catch (err) {
+    alert('Kunde inte kopiera länken. Här är den: ' + shareUrl.value)
+  }
+}
+
 
 async function connectHub(playerId?: string) {
   const url = playerId
@@ -239,9 +249,12 @@ onBeforeUnmount(async () => {
       <!-- Status kontroller -->
       <div v-if="game.status === 'Waiting'" class="card">
         <button class="btn-success" @click="startGame">Starta spel</button>
+        <button @click="shareLink" class="btn-copy">Copy GameURl</button>
       </div>
       <div v-if="game.status === 'Active'" class="card">
         <button class="btn-danger" @click="finishGame">Avsluta spel</button>
+        <button @click="shareLink" class="btn-copy">Copy GameURl</button>
+        
       </div>
 
       <!-- Lag -->
