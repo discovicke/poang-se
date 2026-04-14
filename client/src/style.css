@@ -1,0 +1,251 @@
+/* Global reset och bas-stilar */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #f0f2f5;
+  color: #1a1a2e;
+  line-height: 1.5;
+}
+
+a {
+  color: #4361ee;
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+h1, h2, h3 {
+  color: #16213e;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #d6d9e0;
+  margin: 24px 0;
+}
+
+/* Layout */
+.page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+/* Formulär */
+input[type="text"],
+input[type="number"],
+input:not([type]),
+select {
+  padding: 8px 12px;
+  border: 1px solid #c5c9d4;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #4361ee;
+  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+}
+
+button {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+button:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: #4361ee;
+  color: #fff;
+}
+.btn-primary:hover {
+  background: #3a56d4;
+}
+.btn-primary:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background: #e63946;
+  color: #fff;
+}
+.btn-danger:hover {
+  background: #c5303c;
+}
+
+.btn-success {
+  background: #2ec4b6;
+  color: #fff;
+}
+.btn-success:hover {
+  background: #25a99d;
+}
+
+/* Kort / Sektioner */
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+/* Tabeller */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead th {
+  text-align: left;
+  padding: 10px 8px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  border-bottom: 2px solid #e5e7eb;
+}
+tbody td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Tags / Badges */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.badge-waiting {
+  background: #fef3c7;
+  color: #92400e;
+}
+.badge-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+.badge-finished {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Empty state */
+.empty {
+  color: #9ca3af;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Inline form row */
+.form-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Kompakt spelarlista */
+.player-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+}
+.player-list li {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+/* Misc */
+.text-right {
+  text-align: right;
+}
+.text-muted {
+  color: #9ca3af;
+}
+.text-bold {
+  font-weight: 700;
+}
+.winner-row {
+  font-weight: 700;
+  color: #d97706;
+}
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+/* Vinnarbanner */
+.winner-banner {
+  padding: 14px 18px;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border: 1px solid #34d399;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+/* Spelhuvud metadata */
+.game-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+.game-meta strong {
+  color: #1a1a2e;
+}
+
+/* Status specifika färger på tabellrader */
+.games-table .status-Waiting { color: #92400e; }
+.games-table .status-Active { color: #065f46; }
+.games-table .status-Finished { color: #3730a3; }
+
