@@ -16,6 +16,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<PlayerServices>();
 builder.Services.AddScoped<ScoreServices>();
+builder.Services.AddScoped<GameServices>();
 
 builder.Services.AddCors(options =>
 {
@@ -36,6 +37,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 
+app.GameEndpoints();
 app.PlayerEndpoints();
 app.ScoreEndpoints();
 
