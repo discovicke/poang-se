@@ -30,11 +30,7 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
+await InitializeDatabase(app);
 
 
 app.GameEndpoints();
@@ -47,3 +43,32 @@ app.UseStaticFiles();
 app.MapGet("/", () => "Hello World!");
 
 app.Run();
+
+static async Task InitializeDatabase(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        logger.LogInformation("Attempting to apply migrations...");
+        await db.Database.MigrateAsync();
+        logger.LogInformation("Migrations applied successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Migration failed. Falling back to EnsureCreated (recreating schema)...");
+
+        try
+        {
+            await db.Database.EnsureDeletedAsync();
+            await db.Database.EnsureCreatedAsync();
+            logger.LogInformation("Database recreated successfully with EnsureCreated.");
+        }
+        catch (Exception innerEx)
+        {
+            logger.LogError(innerEx, "Failed to recreate database. Startup continues but DB may be broken.");
+        }
+    }
+}
