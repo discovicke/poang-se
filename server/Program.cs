@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
 using server.Endpoints;
 using server.Service;
+using Microsoft.AspNetCore.SignalR;
+using server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +30,11 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddSignalR();
+
 var app = builder.Build();
+
+app.MapHub<GameHub>("/gamehub");
 
 await InitializeDatabase(app);
 

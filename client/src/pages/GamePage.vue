@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import * as signalR from '@microsoft/signalr'
 const props = defineProps<{ id: string }>()
 
 interface Team {
@@ -52,6 +52,10 @@ const scorePlayerId = ref('')
 const scoreValue = ref<number>(0)
 const scoreRound = ref<number | null>(null)
 const scoreTeamId = ref<string | null>(null)
+
+
+
+const connection = ref<signalR.HubConnection | null>(null)
 
 async function fetchGame() {
   const res = await fetch(`/api/games/${props.id}`)
@@ -143,7 +147,29 @@ function statusBadge(status: string) {
   return `badge badge-${status.toLowerCase()}`
 }
 
-onMounted(load)
+onMounted(async () => {
+
+  await load()
+
+  connection.value = new signalR.HubConnectionBuilder()
+    .withUrl('/gamehub')
+    .withAutomaticReconnect()
+    .build()
+
+    connection.value.on('ScoreAdded', async (newScore: ScoreEntry) => {
+      if(!game.value) return
+      game.value.scores.push(newScore)
+      fetchGame()
+})
+  await connection.value.start()
+  await connection.value.invoke('JoinGame', props.id)
+})
+onBeforeUnmount(async () => {
+  if (connection.value) {
+    await connection.value.invoke('LeaveGame', props.id)
+    await connection.value.stop()
+  }
+})
 </script>
 
 <template>
