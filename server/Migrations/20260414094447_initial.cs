@@ -6,36 +6,11 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace server.Migrations
 {
     /// <inheritdoc />
-    public partial class NewModels : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<double>(
-                name: "CumulativeValue",
-                table: "Scores",
-                type: "double precision",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "GameId",
-                table: "Scores",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
-
-            migrationBuilder.AddColumn<int>(
-                name: "Round",
-                table: "Scores",
-                type: "integer",
-                nullable: true);
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "TeamId",
-                table: "Scores",
-                type: "uuid",
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "Games",
                 columns: table => new
@@ -52,6 +27,19 @@ namespace server.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Games", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Players",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserName = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Players", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -105,15 +93,41 @@ namespace server.Migrations
                         onDelete: ReferentialAction.SetNull);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Scores_GameId",
-                table: "Scores",
-                column: "GameId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Scores_TeamId",
-                table: "Scores",
-                column: "TeamId");
+            migrationBuilder.CreateTable(
+                name: "Scores",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    GameId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Round = table.Column<int>(type: "integer", nullable: true),
+                    Value = table.Column<double>(type: "double precision", nullable: false),
+                    CumulativeValue = table.Column<double>(type: "double precision", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Scores", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Scores_Games_GameId",
+                        column: x => x.GameId,
+                        principalTable: "Games",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Scores_Players_PlayerId",
+                        column: x => x.PlayerId,
+                        principalTable: "Players",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Scores_Teams_TeamId",
+                        column: x => x.TeamId,
+                        principalTable: "Teams",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_GamePlayers_PlayerId",
@@ -126,70 +140,43 @@ namespace server.Migrations
                 column: "TeamId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Scores_GameId",
+                table: "Scores",
+                column: "GameId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Scores_PlayerId",
+                table: "Scores",
+                column: "PlayerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Scores_TeamId",
+                table: "Scores",
+                column: "TeamId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Teams_GameId",
                 table: "Teams",
                 column: "GameId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Scores_Games_GameId",
-                table: "Scores",
-                column: "GameId",
-                principalTable: "Games",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Scores_Teams_TeamId",
-                table: "Scores",
-                column: "TeamId",
-                principalTable: "Teams",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Scores_Games_GameId",
-                table: "Scores");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Scores_Teams_TeamId",
-                table: "Scores");
-
             migrationBuilder.DropTable(
                 name: "GamePlayers");
+
+            migrationBuilder.DropTable(
+                name: "Scores");
+
+            migrationBuilder.DropTable(
+                name: "Players");
 
             migrationBuilder.DropTable(
                 name: "Teams");
 
             migrationBuilder.DropTable(
                 name: "Games");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Scores_GameId",
-                table: "Scores");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Scores_TeamId",
-                table: "Scores");
-
-            migrationBuilder.DropColumn(
-                name: "CumulativeValue",
-                table: "Scores");
-
-            migrationBuilder.DropColumn(
-                name: "GameId",
-                table: "Scores");
-
-            migrationBuilder.DropColumn(
-                name: "Round",
-                table: "Scores");
-
-            migrationBuilder.DropColumn(
-                name: "TeamId",
-                table: "Scores");
         }
     }
 }

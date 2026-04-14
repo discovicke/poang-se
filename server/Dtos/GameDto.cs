@@ -26,3 +26,9 @@ public class AddScoreToGameDto
     public double Value { get; set; }
 }
 
+public class CreatePlayerForGameDto
+{
+    public string UserName { get; set; } = "";
+    public Guid? TeamId { get; set; }
+}
+
