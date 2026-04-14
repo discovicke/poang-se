@@ -11,13 +11,7 @@ interface Game {
   createdAt: string
 }
 
-interface Player {
-  id: string
-  userName: string
-}
-
 const games = ref<Game[]>([])
-const players = ref<Player[]>([])
 
 // Create game form
 const gameName = ref('')
@@ -27,11 +21,6 @@ const maxRounds = ref<number | null>(1)
 async function fetchGames() {
   const res = await fetch('/api/games')
   games.value = await res.json()
-}
-
-async function fetchPlayers() {
-  const res = await fetch('/api/players')
-  players.value = await res.json()
 }
 
 async function createGame() {
@@ -54,47 +43,16 @@ async function createGame() {
   }
 }
 
-// Skapa spelare
-const newPlayerName = ref('')
-
-async function createPlayer() {
-  if (!newPlayerName.value.trim()) return
-  const res = await fetch('/api/players', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userName: newPlayerName.value }),
-  })
-  if (res.ok) {
-    newPlayerName.value = ''
-    await fetchPlayers()
-  }
-}
-
 function badgeClass(status: string) {
   return `badge badge-${status.toLowerCase()}`
 }
 
-onMounted(() => {
-  fetchGames()
-  fetchPlayers()
-})
+onMounted(fetchGames)
 </script>
 
 <template>
   <div class="page">
     <h1>POÄNG.SE</h1>
-
-    <div class="card">
-      <h2>Spelare</h2>
-      <form @submit.prevent="createPlayer" class="form-row">
-        <input v-model="newPlayerName" placeholder="Spelarnamn" />
-        <button type="submit" class="btn-primary">Lägg till spelare</button>
-      </form>
-      <ul v-if="players.length" class="player-list">
-        <li v-for="p in players" :key="p.id">{{ p.userName }}</li>
-      </ul>
-      <p v-else class="empty">Inga spelare ännu.</p>
-    </div>
 
     <div class="card">
       <h2>Skapa nytt spel</h2>
