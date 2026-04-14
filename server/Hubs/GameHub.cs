@@ -32,12 +32,30 @@ namespace server.Hubs
                 return;
             }
 
+            // Åskådare – joina gruppen utan claim
+            if (string.IsNullOrEmpty(playerIdStr))
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
+                await Clients.Caller.SendAsync("ClaimAccepted", new
+                {
+                    GameId = gameId,
+                    PlayerId = (Guid?)null,
+                    PlayerName = (string?)null,
+                    Role = "spectator"
+                });
+                await base.OnConnectedAsync();
+                return;
+            }
+
+
             if (!Guid.TryParse(playerIdStr, out var playerId))
             {
                 await Clients.Caller.SendAsync("Error", "Invalid playerId.");
                 Context.Abort();
                 return;
             }
+
+
 
             // Validera att spelaren faktiskt är med i den specifika matchen
             var gamePlayer = await _db.GamePlayers

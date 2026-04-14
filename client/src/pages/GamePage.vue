@@ -55,7 +55,7 @@ const scoreRound = ref<number | null>(null)
 const scoreTeamId = ref<string | null>(null)
 
 const connection = ref<signalR.HubConnection | null>(null)
-const claim = ref<{ gameId: string; playerId: string | null; playerName: string | null } | null>(null)
+const claim = ref<{ gameId: string; playerId: string | null; playerName: string | null; role: string } | null>(null)
 const showClaimPicker = ref(false)
 
 async function fetchGame() {
