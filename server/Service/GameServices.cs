@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using server.Models;
-
+using server.Hubs;
 namespace server.Service;
 
-public class GameServices(AppDbContext db)
+public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
 {
     public async Task<List<Game>> GetAllGames()
     {
@@ -59,6 +60,16 @@ public class GameServices(AppDbContext db)
 
         db.Scores.Add(score);
         await db.SaveChangesAsync();
+
+        await hub.Clients.Group(score.GameId.ToString())
+            .SendAsync("ScoreAdded", new
+            {
+                score.Id,
+                score.PlayerId,
+                score.Value,
+                score.CumulativeValue,
+                score.CreatedAt
+            });
         return score;
     }
 
