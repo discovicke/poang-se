@@ -163,6 +163,18 @@ async function copyShareLink() {
   }
 }
 
+async function shareLink() {
+  const url = shareUrl.value
+  if (navigator.share) {
+    await navigator.share({
+      title: `Match ${game.value?.name}`,
+      text: `Gå med i spelet!`,
+      url,
+    })
+  } else {
+    await copyShareLink()
+  }
+}
 
 async function connectHub(playerId?: string) {
   const url = playerId
