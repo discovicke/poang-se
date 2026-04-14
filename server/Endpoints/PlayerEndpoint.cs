@@ -7,7 +7,7 @@ public static class PlayerEndpointMapper
 {
     public static WebApplication PlayerEndpoints(this WebApplication app)
     {
-        app.MapPost("/players", async (PlayerDto playerDto, PlayerServices playerServices) =>
+        app.MapPost("/api/players", async (PlayerDto playerDto, PlayerServices playerServices) =>
         {
             var player = new Player
             {
@@ -18,10 +18,10 @@ public static class PlayerEndpointMapper
             };
 
             await playerServices.CreatePlayer(player);
-            return Results.Created($"/players/{player.Id}", player);
+            return Results.Created($"/api/players/{player.Id}", player);
         });
 
-        app.MapGet("/players", async (PlayerServices playerServices) =>
+        app.MapGet("/api/players", async (PlayerServices playerServices) =>
         {
             var players = await playerServices.GetAllPlayers();
             return Results.Ok(players);
