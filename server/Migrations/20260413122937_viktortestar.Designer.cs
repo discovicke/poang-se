@@ -12,7 +12,7 @@ namespace server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20260413122937_viktortestar")]
-    partial class viktortestar
+    partial class ViktorTestar
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
