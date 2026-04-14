@@ -8,7 +8,16 @@ public class Connection
     public string Database { get; set; }
     public string Username { get; set; }
     public string Password { get; set; }
-
+    /// <summary>
+    /// Laddar databasanslutningsinställningar från miljövariabler. Används med .env från rootnivå. Förväntar sig att följande variabler är satta:
+    /// <ul>
+    /// <li><c>DB_HOST</c>: Databasens host-adress (t.ex. "localhost" eller en IP-adress).</li>
+    /// <li><c>DB_PORT</c>: Portnumret som databasen lyssnar på (standard är 5432 för PostgreSQL).</li>
+    /// <li><c>DB_NAME</c>: Namnet på databasen att ansluta till.</li>
+    /// <li><c>DB_USER</c>: Användarnamnet för databasautentisering.</li>
+    /// <li><c>DB_PASSWORD</c>: Lösenord för användaren.</li>
+    /// </ul>
+    /// </summary>
     public Connection()
     {
         Host = Environment.GetEnvironmentVariable("DB_HOST") ?? "";
