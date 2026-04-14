@@ -17,9 +17,15 @@ export default ({ mode }: { mode: string }) => {
         '/api': {
           target: apiTarget,
           changeOrigin: true,
-          secure: false
-        }
-      }
+          secure: false,
+        },
+        '/gamehub': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+          ws: true,
+        },
+      },
     }
   })
 }
