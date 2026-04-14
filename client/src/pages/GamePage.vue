@@ -41,18 +41,12 @@ interface Game {
   scores: ScoreEntry[]
 }
 
-interface AvailablePlayer {
-  id: string
-  userName: string
-}
-
 const game = ref<Game | null>(null)
-const allPlayers = ref<AvailablePlayer[]>([])
 const loading = ref(true)
 
 // Form inputs
 const newTeamName = ref('')
-const selectedPlayerId = ref('')
+const newPlayerName = ref('')
 const selectedTeamId = ref<string | null>(null)
 const scorePlayerId = ref('')
 const scoreValue = ref<number>(0)
@@ -65,14 +59,9 @@ async function fetchGame() {
   game.value = await res.json()
 }
 
-async function fetchPlayers() {
-  const res = await fetch('/api/players')
-  allPlayers.value = await res.json()
-}
-
 async function load() {
   loading.value = true
-  await Promise.all([fetchGame(), fetchPlayers()])
+  await fetchGame()
   loading.value = false
 }
 
@@ -88,16 +77,16 @@ async function addTeam() {
 }
 
 async function addPlayer() {
-  if (!selectedPlayerId.value) return
-  await fetch(`/api/games/${props.id}/players`, {
+  if (!newPlayerName.value.trim()) return
+  await fetch(`/api/games/${props.id}/players/new`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      playerId: selectedPlayerId.value,
+      userName: newPlayerName.value.trim(),
       teamId: selectedTeamId.value || null,
     }),
   })
-  selectedPlayerId.value = ''
+  newPlayerName.value = ''
   selectedTeamId.value = null
   await fetchGame()
 }
@@ -128,12 +117,6 @@ async function finishGame() {
   await fetch(`/api/games/${props.id}/finish`, { method: 'PUT' })
   await fetchGame()
 }
-
-const availablePlayers = computed(() => {
-  if (!game.value) return allPlayers.value
-  const inGame = new Set(game.value.players.map((p) => p.playerId))
-  return allPlayers.value.filter((p) => !inGame.has(p.id))
-})
 
 const scoreboard = computed(() => {
   if (!game.value) return []
@@ -233,15 +216,12 @@ onMounted(load)
         <p v-else class="empty">Inga spelare ännu.</p>
 
         <form v-if="game.status !== 'Finished'" @submit.prevent="addPlayer" class="form-row">
-          <select v-model="selectedPlayerId">
-            <option value="" disabled>Välj spelare...</option>
-            <option v-for="p in availablePlayers" :key="p.id" :value="p.id">{{ p.userName }}</option>
-          </select>
+          <input v-model="newPlayerName" placeholder="Spelarnamn" />
           <select v-model="selectedTeamId" v-if="game.teams.length">
             <option :value="null">Inget lag</option>
             <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
           </select>
-          <button type="submit" class="btn-primary" :disabled="!selectedPlayerId">Lägg till spelare</button>
+          <button type="submit" class="btn-primary" :disabled="!newPlayerName.trim()">Lägg till spelare</button>
         </form>
       </div>
 
