@@ -94,7 +94,6 @@ public static class GameEndpointMapper
             return Results.Created($"/games/{id}/teams/{team.Id}", new { team.Id, team.Name });
         });
 
-        // Lägga till spelare till en match
         app.MapPost("/api/games/{id:guid}/players", async (Guid id, AddPlayerToGameDto dto, GameServices svc) =>
         {
             var gp = new GamePlayer
@@ -109,6 +108,32 @@ public static class GameEndpointMapper
             if (result is null) return Results.Conflict("Player already in game");
 
             return Results.Created($"/games/{id}", new { gp.GameId, gp.PlayerId, gp.TeamId });
+        });
+
+        // Skapa en ny spelare och lägg direkt till i matchen
+        app.MapPost("/api/games/{id:guid}/players/new", async (Guid id, CreatePlayerForGameDto dto, GameServices svc, PlayerServices playerSvc) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.UserName))
+                return Results.BadRequest("UserName krävs");
+
+            var player = new Player
+            {
+                Id = Guid.NewGuid(),
+                UserName = dto.UserName.Trim(),
+                CreatedAt = DateTime.UtcNow
+            };
+            await playerSvc.CreatePlayer(player);
+
+            var gp = new GamePlayer
+            {
+                GameId = id,
+                PlayerId = player.Id,
+                TeamId = dto.TeamId,
+                JoinedAt = DateTime.UtcNow
+            };
+            await svc.AddPlayerToGame(gp);
+
+            return Results.Created($"/games/{id}", new { player.Id, player.UserName, gp.GameId, gp.TeamId });
         });
 
         // Lägga till poäng till en match
