@@ -38,6 +38,18 @@ app.MapHub<GameHub>("/gamehub");
 
 await InitializeDatabase(app);
 
+
+app.GameEndpoints();
+app.PlayerEndpoints();
+app.ScoreEndpoints();
+
+app.UseCors();
+app.UseStaticFiles();
+
+app.MapGet("/", () => "Hello World!");
+
+app.Run();
+
 static async Task InitializeDatabase(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
@@ -66,15 +78,3 @@ static async Task InitializeDatabase(WebApplication app)
         }
     }
 }
-
-
-app.GameEndpoints();
-app.PlayerEndpoints();
-app.ScoreEndpoints();
-
-app.UseCors();
-app.UseStaticFiles();
-
-app.MapGet("/", () => "Hello World!");
-
-app.Run();
