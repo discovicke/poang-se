@@ -6,7 +6,7 @@
 #### Fas 1 - Lobby (admin)
 Skaparen är admin och sätter upp:
 
-- Spelarnamn (lägger till platser, t.ex. "Viktor", "Anna", "Spelare 3")
+- Spelarnamn (lägger till platser, t.ex. "Linus", "Elton", "Jesper")
 - Antal rundor, poängregler
 - En "Starta match"-knapp som låser inställningarna
 
@@ -42,8 +42,8 @@ Innan matchen startat ser alla i lobbyn vilka som jobbat sig in (claiment en pla
 #### Spara gamestate
 GUID i URL + sessionStorage/backend-state = om sidan kraschar kan man komma tillbaka till exakt samma match.
 
-#### Vad jag skulle pusha tillbaka på
-Att alla alltid kan ändra allt är faktiskt okej för MVP men skalas dåligt när det uppstår konflikter ("vem fan ändrade mina poäng?"). Claim-systemet löser detta elegant utan att kräva konton.
+#### Misc tankar
+Att alla alltid kan ändra allt är okej för MVP men skalas dåligt när det uppstår konflikter ("vem fan ändrade mina poäng?"). Claim-systemet löser detta elegant utan att kräva konton.
 
 Störst UX-risk: Om admin-telefonen dör och ingen kan ändra inställningarna mitt i matchen. Bygg in admin-transfer tidigt, det är en enkel feature med stor impact.
 
