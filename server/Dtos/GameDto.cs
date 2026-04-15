@@ -5,6 +5,7 @@ public class CreateGameDto
     public string Name { get; set; } = "";
     public bool LowerIsBetter { get; set; } = false;
     public int? MaxRounds { get; set; } = 1;
+    public double StartingScore { get; set; } = 0;
 }
 
 public class AddTeamDto
