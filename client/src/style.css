@@ -164,19 +164,11 @@ tbody tr:hover {
   table-layout: auto;
 }
 
-/* Första kolumnen – rundan (R1, R2...) */
 .score-matrix .round-col   { min-width: 70px;  text-align: left; }
-
-/* Spelarkolumner – en per spelare */
 .score-matrix .player-col  { min-width: 130px; text-align: center; }
-
-/* Radetiketter (R1, R2...) i tbody */
-.score-matrix .player-name { font-weight: 600; color: #16213e; white-space: nowrap; }
-
-/* Poängcell-td */
+.score-matrix .round-label { font-weight: 600; color: #16213e; white-space: nowrap; }
 .score-matrix .score-cell-td { padding: 6px 4px; text-align: center; }
 
-/* Totalrad i tfoot */
 .score-matrix tfoot td {
   border-top: 2px solid #e5e7eb;
   padding: 10px 8px;
@@ -185,10 +177,15 @@ tbody tr:hover {
   text-align: center;
 }
 
-/* Första cellen i tfoot ("Total"-etiketten) */
 .score-matrix tfoot td:first-child {
   color: #16213e;
   text-align: left;
+}
+
+.score-matrix .total-val {
+  font-weight: 700;
+  text-align: center;
+  color: #4361ee;
 }
 
 .score-cell {
@@ -219,6 +216,23 @@ tbody tr:hover {
   text-align: center;
   font-weight: 600;
   font-size: 0.95rem;
+}
+
+.sc-val-readonly {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #374151;
+}
+
+/* Aktiv runda markering */
+.active-round {
+  background: #eff6ff;
+}
+
+.round-badge {
+  color: #4361ee;
+  font-weight: 700;
+  margin-left: 4px;
 }
 
 /* Tags / Badges */
@@ -353,4 +367,91 @@ tbody tr:hover {
 
 .games-table .status-Finished {
     color: #3730a3;
+}
+
+/* Claim-knappar */
+.claim-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-claimed {
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: default;
+}
+
+.claimed-tag {
+  font-size: 0.75rem;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.btn-secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.btn-secondary:hover {
+  background: #d1d5db;
+}
+
+/* Claim-info bar */
+.claim-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #eef2ff;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+.btn-sm {
+  padding: 4px 12px;
+  font-size: 0.8rem;
+}
+
+/* Kontrollpanel / Action bar */
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-lg {
+  padding: 12px 28px;
+  font-size: 1.05rem;
+}
+
+/* Pausa-knapp */
+.btn-warning {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.btn-warning:hover {
+  background: #d97706;
+}
+
+/* Runda-indikator */
+.round-indicator {
+  font-size: 1rem;
+  color: #374151;
+  padding: 6px 14px;
+  background: #f0f4ff;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* Lobby-inställningar */
+.lobby-settings label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
