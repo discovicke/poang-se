@@ -110,7 +110,11 @@ onMounted(fetchGames)
           </select>
         </div>
         <div v-if="gameMode" class="label">
-          {{ gameMode === 'BestOf' ? 'Bäst av (antal rundor)' : 'Först till (poäng)' }}
+          {{
+            gameMode === 'BestOf'
+              ? 'Bäst av (antal rundor)'
+              : 'Först till (poäng)'
+          }}
           <input type="number" v-model.number="gameModeValue" min="1"/>
         </div>
 
