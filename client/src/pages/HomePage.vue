@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import {ref, onMounted} from 'vue'
+import {useRouter} from 'vue-router'
 
 const router = useRouter()
 
@@ -32,7 +32,7 @@ async function createGame() {
   if (!gameName.value.trim()) return
   const res = await fetch('/api/games', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
       name: gameName.value,
       lowerIsBetter: lowerIsBetter.value,
@@ -74,30 +74,30 @@ onMounted(fetchGames)
     <div class="card">
       <h2>Skapa nytt spel</h2>
       <form @submit.prevent="createGame" class="form-col">
-        <input v-model="gameName" placeholder="Spelnamn" required />
+        <input v-model="gameName" placeholder="Spelnamn" required/>
 
         <label>
-          <input type="checkbox" v-model="lowerIsBetter" />
+          <input type="checkbox" v-model="lowerIsBetter"/>
           Lägre poäng är bättre (t.ex. golf)
         </label>
 
         <label>
-          <input type="checkbox" v-model="creatorOnly" />
+          <input type="checkbox" v-model="creatorOnly"/>
           Bara skaparen kan redigera poäng
         </label>
 
         <div class="form-row">
           <div class="label">
             Max antal rundor
-            <input type="number" v-model.number="maxRounds" min="1" />
+            <input type="number" v-model.number="maxRounds" min="1"/>
           </div>
           <div class="label">
             Startpoäng
-            <input type="number" v-model.number="startingScore" step="any" />
+            <input type="number" v-model.number="startingScore" step="any"/>
           </div>
           <div class="label">
             Poäng per klick
-            <input type="number" v-model.number="scoreIncrement" min="0.1" step="any" />
+            <input type="number" v-model.number="scoreIncrement" min="0.1" step="any"/>
           </div>
         </div>
 
@@ -111,7 +111,7 @@ onMounted(fetchGames)
         </div>
         <div v-if="gameMode" class="label">
           {{ gameMode === 'BestOf' ? 'Bäst av (antal rundor)' : 'Först till (poäng)' }}
-          <input type="number" v-model.number="gameModeValue" min="1" />
+          <input type="number" v-model.number="gameModeValue" min="1"/>
         </div>
 
         <button type="submit" class="btn-primary">Skapa spel</button>
@@ -123,22 +123,22 @@ onMounted(fetchGames)
       <p v-if="!games.length" class="empty">Inga spel ännu.</p>
       <table v-else class="games-table">
         <thead>
-          <tr>
-            <th>Namn</th>
-            <th>Status</th>
-            <th>Skapad</th>
-            <th></th>
-          </tr>
+        <tr>
+          <th>Namn</th>
+          <th>Status</th>
+          <th>Skapad</th>
+          <th></th>
+        </tr>
         </thead>
         <tbody>
-          <tr v-for="g in games" :key="g.id">
-            <td>{{ g.name }}</td>
-            <td><span :class="badgeClass(g.status)">{{ g.status }}</span></td>
-            <td>{{ new Date(g.createdAt).toLocaleString('sv-SE') }}</td>
-            <td>
-              <router-link :to="`/games/${g.id}`">Öppna →</router-link>
-            </td>
-          </tr>
+        <tr v-for="g in games" :key="g.id">
+          <td>{{ g.name }}</td>
+          <td><span :class="badgeClass(g.status)">{{ g.status }}</span></td>
+          <td>{{ new Date(g.createdAt).toLocaleString('sv-SE') }}</td>
+          <td>
+            <router-link :to="`/games/${g.id}`">Öppna →</router-link>
+          </td>
+        </tr>
         </tbody>
       </table>
     </div>
