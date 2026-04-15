@@ -1,4 +1,5 @@
-﻿using server.Dtos;
+﻿using Microsoft.EntityFrameworkCore.Internal;
+using server.Dtos;
 using server.Models;
 using server.Service;
 
@@ -160,6 +161,23 @@ public static class GameEndpointMapper
                 result.CumulativeValue
             });
         });
+
+        // Uppdatera poäng i en specifik runda och indexera om kumulativa värden
+        app.MapPut("/api/games/{id:guid}/scores", async (Guid id, UpdateScoreValueDto dto, GameServices svc) =>
+        {
+            var result = await svc.UpdateScoreValue(id, dto.PlayerId, dto.Round, dto.Value);
+            if (result == null)
+                return Results.NotFound();
+            return Results.Ok(new
+            {
+                result.Id,
+                result.PlayerId,
+                result.Round,
+                result.Value,
+                result.CumulativeValue
+            });
+        });
+
 
         // Starta en match (ändrar enum status till Started)
         app.MapPut("/api/games/{id:guid}/start", async (Guid id, GameServices svc) =>
