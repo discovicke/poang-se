@@ -7,7 +7,7 @@
 - [X] Skapa endpoint för att hämta poäng
 - [X] Skapa endpoint för att uppdatera poäng
 - [X] Skapa endpoint för att ta bort poäng
-- [x] Skapa UI-skelett så att det går att använda API
+- [X] Skapa UI-skelett så att det går att använda API
 
 ### Kravspecifikation
 
@@ -17,7 +17,7 @@
 
 #### Språk
 - [x] Sidan är på svenska som standard
-- [ ] (Bonus) Automatisk språkdetektering via webbläsarpreferens, svenska som fallback
+- [ ] ~~(Bonus) Automatisk språkdetektering via webbläsarpreferens, svenska som fallback~~
 
 #### Startsida `/`
 - [x] Textfält för matchnamn (ex. "Fredagsbiljard")
@@ -39,13 +39,15 @@
 
 #### Övrigt
 - [x] Ingen inloggning krävs för att använda appen
+- [ ] "Starta spel" borde vara disabled på riktigt när inte kraven är uppfyllda. T.ex. ljusgrå istället för med färg.
+- [ ] Ta en funderare på hur vi ska tackla problemet med spel man räknar baklänges, t.ex. 501 i dart. Jag tänkte snett och slog ihop det med "Lägst vinner"-metoden nu vilket är fel. De borde vara separerade! **/Viktor**
 
 ---
 
 ### Skrytpoäng
 - [x] Lagstöd (individuella poäng summeras per lag)
   - [x] Möjlighet att få ut vinnare baserat på lagpoäng
-  - [ ] Måste fixa det i frontenden, backend har redan stöd för det (tror jag)
+  - [ ] Det fungerade inte som jag trodde och gav upp, någon får ta över här om de vill. **/Viktor**
 - [ ] Matchstruktur med omgångar (frames, bowling-stil osv)
 - [x] "Bäst av X" / "Först till X" poäng
   - [ ] "Bäst av X" fungerar inte riktigt...
