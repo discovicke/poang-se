@@ -17,6 +17,7 @@ const games = ref<Game[]>([])
 const gameName = ref('')
 const lowerIsBetter = ref(false)
 const maxRounds = ref<number | null>(1)
+const startingScore = ref<number>(0)
 
 async function fetchGames() {
   const res = await fetch('/api/games')
@@ -32,6 +33,7 @@ async function createGame() {
       name: gameName.value,
       lowerIsBetter: lowerIsBetter.value,
       maxRounds: maxRounds.value,
+      startingScore: startingScore.value,
     }),
   })
   if (res.ok) {
@@ -39,6 +41,7 @@ async function createGame() {
     gameName.value = ''
     lowerIsBetter.value = false
     maxRounds.value = 1
+    startingScore.value = 0
     router.push(`/games/${game.id}`)
   }
 }
@@ -65,6 +68,10 @@ onMounted(fetchGames)
         <div class="label">
           Max antal rundor
           <input type="number" v-model.number="maxRounds" min="1" />
+        </div>
+        <div class="label">
+          Startpoäng
+          <input type="number" v-model.number="startingScore" step="any" />
         </div>
         <button type="submit" class="btn-primary">Skapa spel</button>
       </form>
