@@ -310,6 +310,16 @@ onBeforeUnmount(async () => {
 
 <template>
   <div class="page">
+    <div v-if="isLocked" class="card">
+      <h2>{{ lockedGameName || 'Privat match' }}</h2>
+      <p>Denna match är lösenordsskyddad. Ange lösenordet för att fortsätta.</p>
+      <form @submit.prevent="unlock" class="form-col">
+        <input type="password" v-model="lockPassword" placeholder="Lösenord" required />
+        <button type="submit" class="btn-primary">Lås upp</button>
+      </form>
+    </div>
+
+    <template v-else>
     <div v-if="showClaimPicker && game" class="card">
       <h2>Vem är du?</h2>
       <div class="claim-buttons">
@@ -498,6 +508,7 @@ onBeforeUnmount(async () => {
       </div>
 
 
+    </template>
     </template>
   </div>
 </template>
