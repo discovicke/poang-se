@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using DotNetEnv;
+using Microsoft.EntityFrameworkCore;
 using server.Endpoints;
-using server.Service;
-using Microsoft.AspNetCore.SignalR;
+using server.Extensions;
 using server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,32 +11,17 @@ Env.Load(envPath);
 
 var connString = new Connection().ToString();
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connString));
-
-
-builder.Services.AddScoped<PlayerServices>();
-builder.Services.AddScoped<ScoreServices>();
-builder.Services.AddScoped<GameServices>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowAnyOrigin();
-    });
-});
-
-builder.Services.AddSignalR();
+builder.Services
+    .AddAppDatabase(connString)
+    .AddAppServices()
+    .AddAppCors()
+    .AddSignalR();
 
 var app = builder.Build();
 
 app.MapHub<GameHub>("/gamehub");
 
 await InitializeDatabase(app);
-
 
 app.GameEndpoints();
 app.PlayerEndpoints();

@@ -1,114 +1,145 @@
-using System;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using server.Service;
 
-namespace server.Hubs
+namespace server.Hubs;
+
+/// <summary>
+/// SignalR-hub för realtidskommunikation under ett spel.
+/// Hanterar anslutning med claim-logik (spelare/åskådare/creator),
+/// gruppbaserade notifieringar per match-id samt automatisk unclaim vid frånkoppling.
+/// </summary>
+public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
 {
-    public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
+    /// <summary>
+    /// Körs när en klient ansluter. Förväntar sig query-parametrarna
+    /// <c>gameId</c> (obligatorisk), <c>playerId</c> (valfri) och <c>creatorSecret</c> (valfri).
+    /// Dirigerar anslutningen till <see cref="JoinAsSpectator"/> eller <see cref="JoinAsPlayer"/>.
+    /// </summary>
+    public override async Task OnConnectedAsync()
     {
-        public override async Task OnConnectedAsync()
+        var http = Context.GetHttpContext();
+        if (http is null)
         {
-            var http = Context.GetHttpContext();
-            if (http is null)
-            {
-                await Clients.Caller.SendAsync("Error", "No HTTP context.");
-                Context.Abort();
-                return;
-            }
+            await Clients.Caller.SendAsync("Error", "No HTTP context.");
+            Context.Abort();
+            return;
+        }
 
-            var gameIdStr = http.Request.Query["gameId"].ToString();
-            var playerIdStr = http.Request.Query["playerId"].ToString();
+        var gameIdStr = http.Request.Query["gameId"].ToString();
+        if (!Guid.TryParse(gameIdStr, out var gameId))
+        {
+            await Clients.Caller.SendAsync("Error", "Missing or invalid gameId.");
+            Context.Abort();
+            return;
+        }
 
-            if (!Guid.TryParse(gameIdStr, out var gameId))
-            {
-                await Clients.Caller.SendAsync("Error", "Missing or invalid gameId.");
-                Context.Abort();
-                return;
-            }
-
-            // Åskådare – joina gruppen utan claim
-            if (string.IsNullOrEmpty(playerIdStr))
-            {
-                await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
-                await Clients.Caller.SendAsync("ClaimAccepted", new
-                {
-                    GameId = gameId,
-                    PlayerId = (Guid?)null,
-                    PlayerName = (string?)null,
-                    Role = "spectator"
-                });
-                await base.OnConnectedAsync();
-                return;
-            }
-
-            if (!Guid.TryParse(playerIdStr, out var playerId))
-            {
-                await Clients.Caller.SendAsync("Error", "Invalid playerId.");
-                Context.Abort();
-                return;
-            }
-
-            // Validera att spelaren finns i matchen
-            var gamePlayer = await db.GamePlayers
-                .Include(gp => gp.Player)
-                .FirstOrDefaultAsync(gp => gp.GameId == gameId && gp.PlayerId == playerId);
-
-            if (gamePlayer is null)
-            {
-                await Clients.Caller.SendAsync("Error", "Player not found in this game.");
-                Context.Abort();
-                return;
-            }
-
-            // Försök claima spelaren
-            var claimed = await gameSvc.ClaimPlayer(gameId, playerId, Context.ConnectionId);
-            if (claimed is null)
-            {
-                await Clients.Caller.SendAsync("ClaimRejected", "Player already claimed by another user.");
-                // Fortfarande joina gruppen som åskådare
-                await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
-                await base.OnConnectedAsync();
-                return;
-            }
-
-            await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
-
-            // Kolla om denna spelare är creator
-            var game = await db.Games.FindAsync(gameId);
-            var isCreator = false;
-            var creatorSecretStr = http.Request.Query["creatorSecret"].ToString();
-            if (Guid.TryParse(creatorSecretStr, out var creatorSecret) && game?.CreatorSecret == creatorSecret)
-                isCreator = true;
-
-            await Clients.Caller.SendAsync("ClaimAccepted", new
-            {
-                GameId = gameId,
-                PlayerId = playerId,
-                PlayerName = gamePlayer.Player.UserName,
-                Role = isCreator ? "creator" : "player"
-            });
-
+        var playerIdStr = http.Request.Query["playerId"].ToString();
+        if (string.IsNullOrEmpty(playerIdStr))
+        {
+            await JoinAsSpectator(gameId, gameIdStr);
             await base.OnConnectedAsync();
+            return;
         }
 
-        public async Task UnclaimPlayer(string gameIdStr, string playerIdStr)
+        if (!Guid.TryParse(playerIdStr, out var playerId))
         {
-            if (!Guid.TryParse(gameIdStr, out var gameId) || !Guid.TryParse(playerIdStr, out var playerId))
-                return;
+            await Clients.Caller.SendAsync("Error", "Invalid playerId.");
+            Context.Abort();
+            return;
+        }
 
+        await JoinAsPlayer(gameId, gameIdStr, playerId, http);
+        await base.OnConnectedAsync();
+    }
+
+    /// <summary>
+    /// Friger en spelares claim. Anropas av klienten när användaren väljer att byta spelare.
+    /// </summary>
+    public async Task UnclaimPlayer(string gameIdStr, string playerIdStr)
+    {
+        if (Guid.TryParse(gameIdStr, out var gameId) && Guid.TryParse(playerIdStr, out var playerId))
             await gameSvc.UnclaimPlayer(gameId, playerId, Context.ConnectionId);
-        }
+    }
 
-        public Task LeaveGame(string gameId)
-            => Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
+    /// <summary>Tar bort klientens SignalR-anslutning från spelets grupp.</summary>
+    public Task LeaveGame(string gameId)
+        => Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
 
-        public override async Task OnDisconnectedAsync(Exception? exception)
+    /// <summary>
+    /// Körs automatiskt vid frånkoppling. Friger alla claims kopplade till denna anslutning.
+    /// </summary>
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        await gameSvc.UnclaimByConnection(Context.ConnectionId);
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    /// <summary>
+    /// Lägger till anslutningen i spelets SignalR-grupp och skickar <c>ClaimAccepted</c>
+    /// med rollen "spectator".
+    /// </summary>
+    private async Task JoinAsSpectator(Guid gameId, string gameIdStr)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
+        await Clients.Caller.SendAsync("ClaimAccepted", new
         {
-            // Unclaima alla spelare som denna anslutning hade
-            await gameSvc.UnclaimByConnection(Context.ConnectionId);
-            await base.OnDisconnectedAsync(exception);
+            GameId = gameId,
+            PlayerId = (Guid?)null,
+            PlayerName = (string?)null,
+            Role = "spectator"
+        });
+    }
+
+    /// <summary>
+    /// Validerar att spelaren finns i spelet, försöker claima platsen och skickar
+    /// antingen <c>ClaimAccepted</c> (med korrekt roll) eller <c>ClaimRejected</c>.
+    /// </summary>
+    private async Task JoinAsPlayer(Guid gameId, string gameIdStr, Guid playerId, HttpContext http)
+    {
+        var gamePlayer = await db.GamePlayers
+            .Include(gp => gp.Player)
+            .FirstOrDefaultAsync(gp => gp.GameId == gameId && gp.PlayerId == playerId);
+
+        if (gamePlayer is null)
+        {
+            await Clients.Caller.SendAsync("Error", "Player not found in this game.");
+            Context.Abort();
+            return;
         }
+
+        var claimed = await gameSvc.ClaimPlayer(gameId, playerId, Context.ConnectionId);
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
+
+        if (claimed is null)
+        {
+            await Clients.Caller.SendAsync("ClaimRejected", "Player already claimed by another user.");
+            return;
+        }
+
+        var role = await ResolveRole(gameId, http);
+        await Clients.Caller.SendAsync("ClaimAccepted", new
+        {
+            GameId = gameId,
+            PlayerId = playerId,
+            PlayerName = gamePlayer.Player.UserName,
+            Role = role
+        });
+    }
+
+    /// <summary>
+    /// Avgör om anslutningen är creator genom att jämföra <c>creatorSecret</c>-query-parametern
+    /// mot spelets lagrade hemlighet.
+    /// </summary>
+    private async Task<string> ResolveRole(Guid gameId, HttpContext http)
+    {
+        var secretStr = http.Request.Query["creatorSecret"].ToString();
+        if (!Guid.TryParse(secretStr, out var creatorSecret))
+            return "player";
+
+        var game = await db.Games.FindAsync(gameId);
+        return game?.CreatorSecret == creatorSecret
+            ? "creator"
+            : "player";
     }
 }

@@ -5,8 +5,13 @@ using server.Dtos;
 using server.Hubs;
 namespace server.Service;
 
+/// <summary>
+/// Affärslogik för spel. Ansvarar för CRUD, statusövergångar, poänghantering,
+/// lag-/spelarhantering samt SignalR-notifieringar till anslutna klienter.
+/// </summary>
 public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
 {
+    /// <summary>Returnerar alla spel sorterade med senast skapade först.</summary>
     public async Task<List<Game>> GetAllGames()
     {
         return await db.Games
@@ -14,6 +19,10 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Hämtar ett spel med fullständiga includes: lag, spelare (med spelarentitet och lag)
+    /// samt poäng (med spelarentitet).
+    /// </summary>
     public async Task<Game?> GetGameById(Guid id)
     {
         return await db.Games
@@ -24,6 +33,7 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
             .FirstOrDefaultAsync(g => g.Id == id);
     }
 
+    /// <summary>Sparar ett nytt spel i databasen och returnerar det.</summary>
     public async Task<Game> CreateGame(Game game)
     {
         db.Games.Add(game);
@@ -31,6 +41,7 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return game;
     }
 
+    /// <summary>Lägger till ett lag i ett spel och notifierar gruppen via SignalR.</summary>
     public async Task<Team> AddTeam(Team team)
     {
         db.Teams.Add(team);
@@ -40,6 +51,10 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return team;
     }
 
+    /// <summary>
+    /// Lägger till en spelare i ett spel om spelaren inte redan är med.
+    /// Returnerar <c>null</c> vid dubblett.
+    /// </summary>
     public async Task<GamePlayer?> AddPlayerToGame(GamePlayer gp)
     {
         var exists = await db.GamePlayers
@@ -54,6 +69,11 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return gp;
     }
 
+    /// <summary>
+    /// Registrerar en poäng och beräknar <c>CumulativeValue</c> baserat på
+    /// spelarens befintliga poäng och spelets <c>StartingScore</c>.
+    /// Kontrollerar därefter om "Först till X"-villkoret är uppfyllt.
+    /// </summary>
     public async Task<Score> AddScore(Score score)
     {
         var game = await db.Games.FindAsync(score.GameId);
@@ -85,6 +105,12 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return score;
     }
 
+    /// <summary>
+    /// Uppdaterar poängen för en specifik spelare och runda, och räknar om
+    /// <c>CumulativeValue</c> för alla efterföljande rundor.
+    /// Kontrollerar därefter om "Först till X"-villkoret är uppfyllt.
+    /// Returnerar <c>null</c> om rundan inte finns.
+    /// </summary>
     public async Task<Score?> UpdateScoreValue(Guid gameId, Guid playerId, int round, double newValue)
     {
         var game = await db.Games.FindAsync(gameId);
@@ -120,6 +146,11 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return target;
     }
 
+    /// <summary>
+    /// Uppdaterar lobbyinställningar för ett spel om anroparen är creator och
+    /// spelet fortfarande är i <c>Waiting</c>-status.
+    /// Returnerar <c>null</c> om spelet inte finns eller om secret är fel.
+    /// </summary>
     public async Task<Game?> UpdateSettings(Guid gameId, UpdateGameSettingsDto dto, Guid creatorSecret)
     {
         var game = await db.Games.FindAsync(gameId);
@@ -151,65 +182,72 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return game;
     }
 
+    /// <summary>
+    /// Avslutar spelet, sätter status till <c>Finished</c>, beräknar vinnaren
+    /// via <see cref="CalculateWinnerId"/> och notifierar gruppen.
+    /// </summary>
     public async Task<Game?> FinishGame(Guid id)
     {
         var game = await db.Games
             .Include(g => g.Scores)
             .Include(g => g.GamePlayers)
-            .Include(game => game.Teams)
+            .Include(g => g.Teams)
             .FirstOrDefaultAsync(g => g.Id == id);
 
-        if (game == null) return null;
+        if (game == null)
+            return null;
 
         game.Status = GameStatus.Finished;
         game.FinishedAt = DateTime.UtcNow;
-
-        if (game.TeamBasedWinner && game.Teams.Any())
-        {
-            // Lagbaserad vinnare
-            var teamScores = game.Scores
-                .Where(s => s.TeamId.HasValue)
-                .GroupBy(s => s.TeamId!.Value)
-                .Select(g => new { TeamId = g.Key, Total = g.Sum(s => s.Value) })
-                .ToList();
-
-            if (teamScores.Any())
-            {
-                var winningTeam = game.LowerIsBetter
-                    ? teamScores.MinBy(t => t.Total)
-                    : teamScores.MaxBy(t => t.Total);
-                // WinnerId pekar på det vinnande lagets Id
-                game.WinnerId = winningTeam?.TeamId;
-            }
-        }
-        else
-        {
-            // Individuell vinnare
-            var playerScores = game.Scores
-                .GroupBy(s => s.PlayerId)
-                .Select(g => new { PlayerId = g.Key, Total = g.Sum(s => s.Value) })
-                .ToList();
-
-            if (playerScores.Any())
-            {
-                game.WinnerId = game.LowerIsBetter
-                    ? playerScores.MinBy(p => p.Total)?.PlayerId
-                    : playerScores.MaxBy(p => p.Total)?.PlayerId;
-            }
-        }
+        game.WinnerId = CalculateWinnerId(game);
 
         await db.SaveChangesAsync();
-        await hub.Clients.Group(id.ToString())
-            .SendAsync("GameUpdated");
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
         return game;
     }
 
+    /// <summary>
+    /// Beräknar och returnerar id:t för vinnaren av <paramref name="game"/>.
+    /// Stödjer både lagbaserad och individuell vinnarlogik med hänsyn till <c>LowerIsBetter</c>.
+    /// </summary>
+    private Guid? CalculateWinnerId(Game game)
+    {
+        if (game.TeamBasedWinner && game.Teams.Any())
+        {
+            var totals = game.Scores
+                .Where(s => s.TeamId.HasValue)
+                .GroupBy(s => s.TeamId!.Value)
+                .Select(g => new { Id = g.Key, Total = g.Sum(s => s.Value) })
+                .ToList();
+
+            return game.LowerIsBetter
+                ? totals.MinBy(t => t.Total)?.Id
+                : totals.MaxBy(t => t.Total)?.Id;
+        }
+        else
+        {
+            var totals = game.Scores
+                .GroupBy(s => s.PlayerId)
+                .Select(g => new { Id = g.Key, Total = g.Sum(s => s.Value) })
+                .ToList();
+
+            return game.LowerIsBetter
+                ? totals.MinBy(p => p.Total)?.Id
+                : totals.MaxBy(p => p.Total)?.Id;
+        }
+    }
+
+    /// <summary>
+    /// Startar spelet (status → <c>Active</c>, <c>CurrentRound</c> = 1)
+    /// och notifierar gruppen.
+    /// </summary>
     public async Task<Game?> StartGame(Guid id)
     {
         var game = await db.Games
             .Include(g => g.GamePlayers)
             .FirstOrDefaultAsync(g => g.Id == id);
-        if (game == null) return null;
+        if (game == null)
+            return null;
 
         game.Status = GameStatus.Active;
         game.CurrentRound = 1;
@@ -219,10 +257,15 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return game;
     }
 
+    /// <summary>
+    /// Pausar ett aktivt spel (status → <c>Waiting</c>) och notifierar gruppen.
+    /// Returnerar <c>null</c> om spelet inte är aktivt.
+    /// </summary>
     public async Task<Game?> PauseGame(Guid id)
     {
         var game = await db.Games.FindAsync(id);
-        if (game == null || game.Status != GameStatus.Active) return null;
+        if (game == null || game.Status != GameStatus.Active)
+            return null;
 
         game.Status = GameStatus.Waiting;
         await db.SaveChangesAsync();
@@ -231,10 +274,15 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return game;
     }
 
+    /// <summary>
+    /// Ökar <c>CurrentRound</c> med ett steg om spelet är aktivt och inte redan på sista rundan.
+    /// Kontrollerar därefter om "Bäst av X"-villkoret är uppfyllt.
+    /// </summary>
     public async Task<Game?> AdvanceRound(Guid id)
     {
         var game = await db.Games.FindAsync(id);
-        if (game == null || game.Status != GameStatus.Active) return null;
+        if (game is not { Status: GameStatus.Active })
+            return null;
 
         if (game.MaxRounds.HasValue && game.CurrentRound >= game.MaxRounds.Value)
             return game; // redan på sista rundan
@@ -250,11 +298,13 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return game;
     }
 
+    /// <summary>Tilldelar (eller avlägsnar) en spelare från ett lag inom ett spel.</summary>
     public async Task<GamePlayer?> AssignPlayerToTeam(Guid gameId, Guid playerId, Guid? teamId)
     {
         var gp = await db.GamePlayers
             .FirstOrDefaultAsync(x => x.GameId == gameId && x.PlayerId == playerId);
-        if (gp == null) return null;
+        if (gp is null)
+            return null;
 
         gp.TeamId = teamId;
         await db.SaveChangesAsync();
@@ -263,11 +313,16 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return gp;
     }
 
+    /// <summary>
+    /// Försöker claima en spelplats åt en SignalR-anslutning.
+    /// Returnerar <c>null</c> om platsen redan är claimad av en annan anslutning.
+    /// </summary>
     public async Task<GamePlayer?> ClaimPlayer(Guid gameId, Guid playerId, string connectionId)
     {
         var gp = await db.GamePlayers
             .FirstOrDefaultAsync(x => x.GameId == gameId && x.PlayerId == playerId);
-        if (gp == null) return null;
+        if (gp is null)
+            return null;
         if (gp.ClaimedByConnectionId != null && gp.ClaimedByConnectionId != connectionId)
             return null; // redan claimad av någon annan
 
@@ -278,12 +333,17 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return gp;
     }
 
+    /// <summary>
+    /// Friger en claimad spelplats om <paramref name="connectionId"/> matchar det lagrade värdet.
+    /// </summary>
     public async Task<GamePlayer?> UnclaimPlayer(Guid gameId, Guid playerId, string connectionId)
     {
         var gp = await db.GamePlayers
             .FirstOrDefaultAsync(x => x.GameId == gameId && x.PlayerId == playerId);
-        if (gp == null) return null;
-        if (gp.ClaimedByConnectionId != connectionId) return null;
+        if (gp is null)
+            return null;
+        if (gp.ClaimedByConnectionId != connectionId)
+            return null;
 
         gp.ClaimedByConnectionId = null;
         await db.SaveChangesAsync();
@@ -292,6 +352,10 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return gp;
     }
 
+    /// <summary>
+    /// Friger alla spelplatser som är claimade av den givna SignalR-anslutningen.
+    /// Anropas automatiskt vid <c>OnDisconnected</c>.
+    /// </summary>
     public async Task UnclaimByConnection(string connectionId)
     {
         var claimed = await db.GamePlayers
@@ -305,7 +369,7 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
                 .SendAsync("GameUpdated");
         }
 
-        if (claimed.Any())
+        if (claimed.Count != 0)
             await db.SaveChangesAsync();
     }
 
@@ -317,8 +381,10 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         var game = await db.Games
             .Include(g => g.Scores)
             .FirstOrDefaultAsync(g => g.Id == gameId);
-        if (game == null || game.Status != GameStatus.Active) return;
-        if (game.GameMode != "FirstTo" || !game.GameModeValue.HasValue) return;
+        if (game is not { Status: GameStatus.Active })
+            return;
+        if (game.GameMode != "FirstTo" || !game.GameModeValue.HasValue)
+            return;
 
         var target = game.GameModeValue.Value;
 
@@ -351,8 +417,10 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         var game = await db.Games
             .Include(g => g.Scores)
             .FirstOrDefaultAsync(g => g.Id == gameId);
-        if (game == null || game.Status != GameStatus.Active) return;
-        if (game.GameMode != "BestOf" || !game.GameModeValue.HasValue) return;
+        if (game is not { Status: GameStatus.Active })
+            return;
+        if (game.GameMode != "BestOf" || !game.GameModeValue.HasValue)
+            return;
 
         var bestOf = game.GameModeValue.Value;
         var roundsToWin = (bestOf / 2) + 1;
@@ -370,11 +438,10 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
                 ? playerTotals.MinBy(p => p.Total)
                 : playerTotals.MaxBy(p => p.Total);
 
-            if (winner != null)
-            {
-                roundWins.TryAdd(winner.PlayerId, 0);
-                roundWins[winner.PlayerId]++;
-            }
+            if (winner == null)
+                continue;
+            roundWins.TryAdd(winner.PlayerId, 0);
+            roundWins[winner.PlayerId]++;
         }
 
         if (roundWins.Values.Any(w => w >= roundsToWin))
