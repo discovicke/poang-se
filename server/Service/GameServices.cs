@@ -87,7 +87,10 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
 
         targetRound.Value = newValue;
 
-        double running = 0;
+        var running = db.Games.Where(g => g.Id == gameId)
+            .Select(g => g.StartingScore)
+            .FirstOrDefault();
+
         foreach (var score in playerScores)
         {
             running += score.Value;
