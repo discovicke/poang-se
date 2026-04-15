@@ -28,6 +28,7 @@ public static class GameEndpointMapper
                 Status = game.Status.ToString(),
                 game.LowerIsBetter,
                 game.MaxRounds,
+                game.StartingScore,
                 game.WinnerId,
                 game.CreatedAt,
                 game.FinishedAt,
@@ -98,6 +99,9 @@ public static class GameEndpointMapper
 
         app.MapPost("/api/games/{id:guid}/players", async (Guid id, AddPlayerToGameDto dto, GameServices svc) =>
         {
+            var game = await svc.GetGameById(id);
+            if (game is null) return Results.NotFound();
+
             var gp = new GamePlayer
             {
                 GameId = id,
@@ -109,6 +113,20 @@ public static class GameEndpointMapper
             var result = await svc.AddPlayerToGame(gp);
             if (result is null) return Results.Conflict("Player already in game");
 
+            if (game.StartingScore != 0)
+            {
+                var initialScore = new Score
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = id,
+                    PlayerId = dto.PlayerId,
+                    Round = null,
+                    Value = game.StartingScore,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await svc.AddScore(initialScore);
+            }
+
             return Results.Created($"/games/{id}", new { gp.GameId, gp.PlayerId, gp.TeamId });
         });
 
@@ -117,6 +135,9 @@ public static class GameEndpointMapper
         {
             if (string.IsNullOrWhiteSpace(dto.UserName))
                 return Results.BadRequest("UserName krävs");
+
+            var game = await svc.GetGameById(id);
+            if (game is null) return Results.NotFound();
 
             var player = new Player
             {
@@ -134,6 +155,20 @@ public static class GameEndpointMapper
                 JoinedAt = DateTime.UtcNow
             };
             await svc.AddPlayerToGame(gp);
+
+            if (game.StartingScore != 0)
+            {
+                var initialScore = new Score
+                {
+                    Id = Guid.NewGuid(),
+                    GameId = id,
+                    PlayerId = player.Id,
+                    Round = null,
+                    Value = game.StartingScore,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await svc.AddScore(initialScore);
+            }
 
             return Results.Created($"/games/{id}", new { player.Id, player.UserName, gp.GameId, gp.TeamId });
         });
