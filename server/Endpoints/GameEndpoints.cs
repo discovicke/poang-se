@@ -65,6 +65,7 @@ public static class GameEndpointMapper
                 Name = dto.Name,
                 LowerIsBetter = dto.LowerIsBetter,
                 MaxRounds = dto.MaxRounds,
+                StartingScore = dto.StartingScore,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -76,6 +77,7 @@ public static class GameEndpointMapper
                 Status = game.Status.ToString(),
                 game.LowerIsBetter,
                 game.MaxRounds,
+                game.StartingScore,
                 game.CreatedAt
             });
         });
