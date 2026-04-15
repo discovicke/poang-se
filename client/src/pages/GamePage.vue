@@ -67,10 +67,12 @@ async function fetchGame() {
 
 async function load() {
   loading.value = true
-  await fetchGame()
-  loading.value = false
+  try {
+    await fetchGame()
+  } finally {
+    loading.value = false
+  }
 }
-
 async function addTeam() {
   if (!newTeamName.value.trim()) return
   await fetch(`/api/games/${props.id}/teams`, {
@@ -124,11 +126,39 @@ async function finishGame() {
   await fetchGame()
 }
 
+const rounds = computed(() => {
+  if (!game.value) return []
+  const maxFromScores = game.value.scores.reduce((m, s) => Math.max(m, s.round ?? 0), 0)
+  const maxRound = Math.max(maxFromScores + 1, game.value.maxRounds ?? 1)
+  return Array.from({ length: maxRound }, (_, i) => i + 1)
+})
+
+const scoreMatrix = computed(() => {
+  if (!game.value) return {} as Record<string, Record<number, ScoreEntry>>
+  const matrix: Record<string, Record<number, ScoreEntry>> = {}
+  for (const p of game.value.players) matrix[p.playerId] = {}
+  for (const s of game.value.scores) {
+    if (s.round != null && matrix[s.playerId])
+      matrix[s.playerId][s.round] = s
+  }
+  return matrix
+})
+
+function getScoreValue(playerId: string, round: number): number {
+  return scoreMatrix.value[playerId]?.[round]?.value ?? 0
+}
+
+function playerTotal(playerId: string): number {
+  return game.value?.scores
+    .filter(s => s.playerId === playerId)
+    .reduce((sum, s) => sum + s.value, 0) ?? 0
+}
+
 const scoreboard = computed(() => {
   if (!game.value) return []
   const map = new Map<string, { playerId: string; name: string; teamName: string | null; total: number }>()
   for (const p of game.value.players) {
-    map.set(p.playerId, {playerId: p.playerId, name: p.playerName, teamName: p.teamName, total: 0})
+    map.set(p.playerId, { playerId: p.playerId, name: p.playerName, teamName: p.teamName, total: 0 })
   }
   for (const s of game.value.scores) {
     const entry = map.get(s.playerId)
@@ -138,6 +168,26 @@ const scoreboard = computed(() => {
   arr.sort((a, b) => game.value!.lowerIsBetter ? a.total - b.total : b.total - a.total)
   return arr
 })
+
+
+async function adjustScore(playerId: string, round: number, delta: number) {
+  const existing = scoreMatrix.value[playerId]?.[round]
+  if (existing) {
+    await fetch(`/api/games/${props.id}/scores`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId, round, value: existing.value + delta }),
+    })
+  } else {
+    const teamId = game.value?.players.find(p => p.playerId === playerId)?.teamId ?? null
+    await fetch(`/api/games/${props.id}/scores`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId, teamId, round, value: delta }),
+    })
+  }
+  await fetchGame()
+}
 
 const winnerName = computed(() => {
   if (!game.value?.winnerId) return null
@@ -266,7 +316,7 @@ onBeforeUnmount(async () => {
       <div v-if="game.status === 'Active'" class="card">
         <button class="btn-danger" @click="finishGame">Avsluta spel</button>
         <button @click="shareLink" class="btn-copy">Copy GameURl</button>
-        
+
       </div>
 
       <!-- Lag -->
@@ -371,30 +421,45 @@ onBeforeUnmount(async () => {
       </div>
 
       <!-- Poänghistorik -->
-      <div class="card">
+      <div v-if="game.players.length" class="card">
         <h2>Poänghistorik</h2>
-        <table v-if="game.scores.length">
-          <thead>
-          <tr>
-            <th>Runda</th>
-            <th>Spelare</th>
-            <th class="text-right">Poäng</th>
-            <th class="text-right">Ack. total</th>
-            <th>Tid</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="s in game.scores" :key="s.id">
-            <td>{{ s.round ?? '–' }}</td>
-            <td>{{ s.playerName }}</td>
-            <td class="text-right">{{ s.value }}</td>
-            <td class="text-right">{{ s.cumulativeValue }}</td>
-            <td class="text-muted">{{ new Date(s.createdAt).toLocaleString('sv-SE') }}</td>
-          </tr>
-          </tbody>
-        </table>
-        <p v-else class="empty">Inga poäng registrerade ännu.</p>
+        <div class="score-matrix-wrapper">
+          <table class="score-matrix">
+            <thead>
+            <tr>
+              <th class="round-col">Runda</th>
+              <th v-for="p in game.players" :key="p.playerId" class="player-col">{{ p.playerName }}</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="r in rounds" :key="r">
+              <td class="player-name">R{{ r }}</td>
+              <td v-for="p in game.players" :key="p.playerId" class="score-cell-td">
+                <div class="score-cell">
+                  <button class="sc-btn sc-minus"
+                          :disabled="game.status === 'Finished'"
+                          @click="adjustScore(p.playerId, r, -1)">−</button>
+                  <span class="sc-val">{{ getScoreValue(p.playerId, r) }}</span>
+                  <button class="sc-btn sc-plus"
+                          :disabled="game.status === 'Finished'"
+                          @click="adjustScore(p.playerId, r, 1)">+</button>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr>
+              <td class="player-name">Total</td>
+              <td v-for="p in game.players" :key="p.playerId" class="total-val">
+                {{ playerTotal(p.playerId) }}
+              </td>
+            </tr>
+            </tfoot>
+          </table>
+        </div>
       </div>
+
+
     </template>
   </div>
 </template>
