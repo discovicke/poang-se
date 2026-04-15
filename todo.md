@@ -24,7 +24,7 @@
 - [x] Inställning: höga eller låga poäng är bättre
 - [x] Inställning: startpoäng (standard 0)
 - [x] Möjlighet att lägga till förbestämda spelare
-- [ ] Inställning: lås spelare när matchen är igång (visas om minst en spelare lagts till)
+- [x] Inställning: lås spelare när matchen är igång (visas om minst en spelare lagts till)
 - [x] Knapp: Skapa match
   - [x] Genererar slumpad URL (ej ren sifferföljd, förslagsvis GUID/kort hash)
   - [x] Navigerar användaren till matchsidan
@@ -44,9 +44,10 @@
 
 ### Skrytpoäng
 - [x] Lagstöd (individuella poäng summeras per lag)
-  - [ ] Möjlighet att få ut vinnare baserat på lagpoäng
+  - [x] Möjlighet att få ut vinnare baserat på lagpoäng
+  - [ ] Måste fixa det i frontenden, backend har redan stöd för det (tror jag)
 - [ ] Matchstruktur med omgångar (frames, bowling-stil osv)
-- [ ] "Bäst av X" / "Först till X" poäng
+- [x] "Bäst av X" / "Först till X" poäng
 - [ ] Turneringar / säsonger
 - [ ] Tillfälliga matcher med automatisk borttagning
 - [ ] Anpassad statistik (ex. antal missade pilar)
