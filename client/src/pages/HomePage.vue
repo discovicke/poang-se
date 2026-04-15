@@ -70,7 +70,7 @@ onMounted(fetchGames)
           <input type="number" v-model.number="maxRounds" min="1" />
         </div>
         <div class="label">
-          Startpoäng (alla spelare börjar på)
+          Startpoäng
           <input type="number" v-model.number="startingScore" step="any" />
         </div>
         <button type="submit" class="btn-primary">Skapa spel</button>
