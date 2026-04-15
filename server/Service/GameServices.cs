@@ -73,6 +73,31 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         return score;
     }
 
+    public async Task<Score?> UpdateScoreValue(Guid gameId, Guid playerId, int round, double newValue)
+    {
+        var playerScores = await db.Scores
+            .Where(s => s.GameId == gameId && s.PlayerId == playerId)
+            .OrderBy(s => s.Round)
+            .ThenBy(s => s.CreatedAt)
+            .ToListAsync();
+
+        var targetRound = playerScores.FirstOrDefault(s => s.Round == round);
+        if (targetRound == null)
+            return null;
+
+        targetRound.Value = newValue;
+
+        double running = 0;
+        foreach (var score in playerScores)
+        {
+            running += score.Value;
+            score.CumulativeValue = running;
+        }
+
+        await db.SaveChangesAsync();
+        return targetRound;
+    }
+
     public async Task<Game?> FinishGame(Guid id)
     {
         var game = await db.Games
