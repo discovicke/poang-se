@@ -48,6 +48,7 @@
   - [ ] Måste fixa det i frontenden, backend har redan stöd för det (tror jag)
 - [ ] Matchstruktur med omgångar (frames, bowling-stil osv)
 - [x] "Bäst av X" / "Först till X" poäng
+  - [ ] "Bäst av X" fungerar inte riktigt...
 - [ ] Turneringar / säsonger
 - [ ] Tillfälliga matcher med automatisk borttagning
 - [ ] Anpassad statistik (ex. antal missade pilar)
