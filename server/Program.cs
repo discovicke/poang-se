@@ -56,25 +56,7 @@ static async Task InitializeDatabase(WebApplication app)
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
-    try
-    {
-        logger.LogInformation("Attempting to apply migrations...");
-        await db.Database.MigrateAsync();
-        logger.LogInformation("Migrations applied successfully.");
-    }
-    catch (Exception ex)
-    {
-        logger.LogWarning(ex, "Migration failed. Falling back to EnsureCreated (recreating schema)...");
-
-        try
-        {
-            await db.Database.EnsureDeletedAsync();
-            await db.Database.EnsureCreatedAsync();
-            logger.LogInformation("Database recreated successfully with EnsureCreated.");
-        }
-        catch (Exception innerEx)
-        {
-            logger.LogError(innerEx, "Failed to recreate database. Startup continues but DB may be broken.");
-        }
-    }
+    logger.LogInformation("Applying pending migrations...");
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Database ready.");
 }
