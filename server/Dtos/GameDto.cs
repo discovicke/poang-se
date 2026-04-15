@@ -32,3 +32,10 @@ public class CreatePlayerForGameDto
     public Guid? TeamId { get; set; }
 }
 
+public class UpdateScoreValueDto
+{
+    public Guid PlayerId { get; set; }
+    public int Round { get; set; }
+    public double Value { get; set; }
+}
+
