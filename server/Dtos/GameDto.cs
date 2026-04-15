@@ -6,6 +6,13 @@ public class CreateGameDto
     public bool LowerIsBetter { get; set; } = false;
     public int? MaxRounds { get; set; } = 1;
     public double StartingScore { get; set; } = 0;
+    public bool IsPrivate { get; set; } = false;
+    public string? GamePassword { get; set; }
+}
+
+public class UnlockGameDto
+{
+    public string Password { get; set; } = "";
 }
 
 public class AddTeamDto
