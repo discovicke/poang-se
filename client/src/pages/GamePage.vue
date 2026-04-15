@@ -60,10 +60,46 @@ const connection = ref<signalR.HubConnection | null>(null)
 const claim = ref<{ gameId: string; playerId: string | null; playerName: string | null; role: string } | null>(null)
 const showClaimPicker = ref(false)
 
+const isLocked = ref(false)
+const lockedGameName = ref('')
+const lockPassword = ref('')
+
+function authHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = localStorage.getItem(`gameToken:${props.id}`)
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  return headers
+}
+
 async function fetchGame() {
-  const res = await fetch(`/api/games/${props.id}`)
+  const res = await fetch(`/api/games/${props.id}`, { headers: authHeaders() })
+  if (res.status === 403) {
+    const data = await res.json()
+    if (data.isPrivate) {
+      isLocked.value = true
+      lockedGameName.value = data.name ?? ''
+    }
+    return
+  }
   if (!res.ok) return
   game.value = await res.json()
+  isLocked.value = false
+}
+
+async function unlock() {
+  const res = await fetch(`/api/games/${props.id}/unlock`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: lockPassword.value }),
+  })
+  if (res.ok) {
+    const { token } = await res.json()
+    localStorage.setItem(`gameToken:${props.id}`, token)
+    lockPassword.value = ''
+    await fetchGame()
+  } else {
+    alert('Fel lösenord. Försök igen.')
+  }
 }
 
 async function load() {
@@ -78,7 +114,7 @@ async function addTeam() {
   if (!newTeamName.value.trim()) return
   await fetch(`/api/games/${props.id}/teams`, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: authHeaders(),
     body: JSON.stringify({name: newTeamName.value}),
   })
   newTeamName.value = ''
@@ -89,7 +125,7 @@ async function addPlayer() {
   if (!newPlayerName.value.trim()) return
   await fetch(`/api/games/${props.id}/players/new`, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: authHeaders(),
     body: JSON.stringify({
       userName: newPlayerName.value.trim(),
       teamId: selectedTeamId.value || null,
@@ -104,7 +140,7 @@ async function addScore() {
   if (!scorePlayerId.value) return
   await fetch(`/api/games/${props.id}/scores`, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: authHeaders(),
     body: JSON.stringify({
       playerId: scorePlayerId.value,
       teamId: scoreTeamId.value || null,
@@ -118,12 +154,12 @@ async function addScore() {
 }
 
 async function startGame() {
-  await fetch(`/api/games/${props.id}/start`, {method: 'PUT'})
+  await fetch(`/api/games/${props.id}/start`, { method: 'PUT', headers: authHeaders() })
   await fetchGame()
 }
 
 async function finishGame() {
-  await fetch(`/api/games/${props.id}/finish`, {method: 'PUT'})
+  await fetch(`/api/games/${props.id}/finish`, { method: 'PUT', headers: authHeaders() })
   await fetchGame()
 }
 
@@ -176,14 +212,14 @@ async function adjustScore(playerId: string, round: number, delta: number) {
   if (existing) {
     await fetch(`/api/games/${props.id}/scores`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ playerId, round, value: existing.value + delta }),
     })
   } else {
     const teamId = game.value?.players.find(p => p.playerId === playerId)?.teamId ?? null
     await fetch(`/api/games/${props.id}/scores`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ playerId, teamId, round, value: delta }),
     })
   }
