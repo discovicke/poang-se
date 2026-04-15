@@ -10,6 +10,8 @@ public class Game
     public bool LowerIsBetter { get; set; } = false;
     public int? MaxRounds { get; set; } = 1;
     public double StartingScore { get; set; } = 0;
+    public bool IsPrivate { get; set; } = false;
+    public string? PasswordHash { get; set; }
     public Guid? WinnerId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }
