@@ -18,6 +18,10 @@ const gameName = ref('')
 const lowerIsBetter = ref(false)
 const maxRounds = ref<number | null>(1)
 const startingScore = ref<number>(0)
+const creatorOnly = ref(false)
+const scoreIncrement = ref<number>(1)
+const gameMode = ref<string | null>(null)
+const gameModeValue = ref<number | null>(null)
 
 async function fetchGames() {
   const res = await fetch('/api/games')
@@ -34,14 +38,24 @@ async function createGame() {
       lowerIsBetter: lowerIsBetter.value,
       maxRounds: maxRounds.value,
       startingScore: startingScore.value,
+      creatorOnly: creatorOnly.value,
+      scoreIncrement: scoreIncrement.value,
+      gameMode: gameMode.value,
+      gameModeValue: gameModeValue.value,
     }),
   })
   if (res.ok) {
     const game = await res.json()
+    // Spara creatorSecret i localStorage
+    localStorage.setItem(`creator:${game.id}`, game.creatorSecret)
     gameName.value = ''
     lowerIsBetter.value = false
     maxRounds.value = 1
     startingScore.value = 0
+    creatorOnly.value = false
+    scoreIncrement.value = 1
+    gameMode.value = null
+    gameModeValue.value = null
     router.push(`/games/${game.id}`)
   }
 }
@@ -61,18 +75,45 @@ onMounted(fetchGames)
       <h2>Skapa nytt spel</h2>
       <form @submit.prevent="createGame" class="form-col">
         <input v-model="gameName" placeholder="Spelnamn" required />
+
         <label>
           <input type="checkbox" v-model="lowerIsBetter" />
           Lägre poäng är bättre (t.ex. golf)
         </label>
-        <div class="label">
-          Max antal rundor
-          <input type="number" v-model.number="maxRounds" min="1" />
+
+        <label>
+          <input type="checkbox" v-model="creatorOnly" />
+          Bara skaparen kan redigera poäng
+        </label>
+
+        <div class="form-row">
+          <div class="label">
+            Max antal rundor
+            <input type="number" v-model.number="maxRounds" min="1" />
+          </div>
+          <div class="label">
+            Startpoäng
+            <input type="number" v-model.number="startingScore" step="any" />
+          </div>
+          <div class="label">
+            Poäng per klick
+            <input type="number" v-model.number="scoreIncrement" min="0.1" step="any" />
+          </div>
         </div>
+
         <div class="label">
-          Startpoäng
-          <input type="number" v-model.number="startingScore" step="any" />
+          Spelläge
+          <select v-model="gameMode">
+            <option :value="null">Standard</option>
+            <option value="BestOf">Bäst av X</option>
+            <option value="FirstTo">Först till X</option>
+          </select>
         </div>
+        <div v-if="gameMode" class="label">
+          {{ gameMode === 'BestOf' ? 'Bäst av (antal rundor)' : 'Först till (poäng)' }}
+          <input type="number" v-model.number="gameModeValue" min="1" />
+        </div>
+
         <button type="submit" class="btn-primary">Skapa spel</button>
       </form>
     </div>
