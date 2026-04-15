@@ -18,6 +18,8 @@ const gameName = ref('')
 const lowerIsBetter = ref(false)
 const maxRounds = ref<number | null>(1)
 const startingScore = ref<number>(0)
+const isPrivate = ref(false)
+const gamePassword = ref('')
 
 async function fetchGames() {
   const res = await fetch('/api/games')
@@ -34,6 +36,8 @@ async function createGame() {
       lowerIsBetter: lowerIsBetter.value,
       maxRounds: maxRounds.value,
       startingScore: startingScore.value,
+      isPrivate: isPrivate.value,
+      gamePassword: isPrivate.value ? gamePassword.value : null,
     }),
   })
   if (res.ok) {
@@ -42,6 +46,8 @@ async function createGame() {
     lowerIsBetter.value = false
     maxRounds.value = 1
     startingScore.value = 0
+    isPrivate.value = false
+    gamePassword.value = ''
     router.push(`/games/${game.id}`)
   }
 }
@@ -72,6 +78,14 @@ onMounted(fetchGames)
         <div class="label">
           Startpoäng
           <input type="number" v-model.number="startingScore" step="any" />
+        </div>
+        <label>
+          <input type="checkbox" v-model="isPrivate" />
+          Privat match (lösenordsskyddad)
+        </label>
+        <div v-if="isPrivate" class="label">
+          Lösenord
+          <input type="password" v-model="gamePassword" placeholder="Ange lösenord" required />
         </div>
         <button type="submit" class="btn-primary">Skapa spel</button>
       </form>
