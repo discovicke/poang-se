@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore.Internal;
 using server.Dtos;
+using server.Helpers;
 using server.Models;
 using server.Service;
 
@@ -13,14 +14,24 @@ public static class GameEndpointMapper
         app.MapGet("/api/games", async (GameServices svc) =>
         {
             var games = await svc.GetAllGames();
-            return Results.Ok(games);
+            return Results.Ok(games.Select(g => new
+            {
+                g.Id,
+                g.Name,
+                Status = g.Status.ToString(),
+                g.IsPrivate,
+                g.CreatedAt
+            }));
         });
 
         // Hämta match (med all relevant data)
-        app.MapGet("/api/games/{id:guid}", async (Guid id, GameServices svc) =>
+        app.MapGet("/api/games/{id:guid}", async (Guid id, GameServices svc, HttpContext ctx) =>
         {
             var game = await svc.GetGameById(id);
             if (game is null) return Results.NotFound();
+
+            if (game.IsPrivate && !IsAuthorized(game, ctx))
+                return Results.Json(new { game.IsPrivate, game.Name }, statusCode: 403);
 
             return Results.Ok(new
             {
@@ -61,6 +72,9 @@ public static class GameEndpointMapper
         // Skapa ny match
         app.MapPost("/api/games", async (CreateGameDto dto, GameServices svc) =>
         {
+            if (dto.IsPrivate && string.IsNullOrWhiteSpace(dto.GamePassword))
+                return Results.BadRequest("Lösenord krävs för privata matcher.");
+
             var game = new Game
             {
                 Id = Guid.NewGuid(),
@@ -68,6 +82,8 @@ public static class GameEndpointMapper
                 LowerIsBetter = dto.LowerIsBetter,
                 MaxRounds = dto.MaxRounds,
                 StartingScore = dto.StartingScore,
+                IsPrivate = dto.IsPrivate,
+                PasswordHash = dto.IsPrivate ? GameTokenHelper.HashPassword(dto.GamePassword!) : null,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -80,6 +96,7 @@ public static class GameEndpointMapper
                 game.LowerIsBetter,
                 game.MaxRounds,
                 game.StartingScore,
+                game.IsPrivate,
                 game.CreatedAt
             });
         });
@@ -215,6 +232,19 @@ public static class GameEndpointMapper
             });
         });
 
+        app.MapPost("/api/games/{id:guid}/unlock", async (Guid id, UnlockGameDto dto, GameServices svc) =>
+        {
+            var game = await svc.GetGameById(id);
+            if (game is null) return Results.NotFound();
+            if (!game.IsPrivate) return Results.BadRequest("Matchen är inte privat.");
+
+            var hash = GameTokenHelper.HashPassword(dto.Password);
+            if (hash != game.PasswordHash)
+                return Results.Json(new { error = "Fel lösenord." }, statusCode: 401);
+
+            var token = GameTokenHelper.GenerateToken(game.Id);
+            return Results.Ok(new { token });
+        });
 
         // Starta en match (ändrar enum status till Started)
         app.MapPut("/api/games/{id:guid}/start", async (Guid id, GameServices svc) =>
@@ -239,5 +269,17 @@ public static class GameEndpointMapper
         });
 
         return app;
+    }
+
+    private static bool IsAuthorized(Game game, HttpContext ctx)
+    {
+        if (!game.IsPrivate) return true;
+        var auth = ctx.Request.Headers.Authorization.FirstOrDefault();
+        if (auth?.StartsWith("Bearer ") == true)
+        {
+            var token = auth["Bearer ".Length..];
+            return GameTokenHelper.ValidateToken(game.Id, token);
+        }
+        return false;
     }
 }
