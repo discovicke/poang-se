@@ -6,6 +6,7 @@ import {useGameApi} from '../composables/useGameApi'
 import {useSignalR} from '../composables/useSignalR'
 import {useGameState} from '../composables/useGameState'
 
+import PageNotFound from './PageNotFound.vue'
 import GameHeader from '../components/GameHeader.vue'
 import ClaimPicker from '../components/ClaimPicker.vue'
 import GameLobby from '../components/GameLobby.vue'
@@ -165,10 +166,10 @@ onBeforeUnmount(async () => {
 
 <template>
   <div class="page">
-    <router-link to="/" class="back-link">← Tillbaka</router-link>
+    <!-- <router-link to="/" class="back-link">← Tillbaka</router-link> -->
 
     <div v-if="api.loading.value" class="card">Laddar...</div>
-    <div v-else-if="!game" class="card"><h2>Spelet hittades inte</h2></div>
+    <PageNotFound v-else-if="!game" />
 
     <template v-else>
       <!-- Header (alltid synlig) -->
