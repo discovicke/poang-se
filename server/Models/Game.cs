@@ -9,6 +9,7 @@ public class Game
     public GameStatus Status { get; set; } = GameStatus.Waiting;
     public bool LowerIsBetter { get; set; } = false;
     public int? MaxRounds { get; set; } = 1;
+    public double StartingScore { get; set; } = 0;
     public Guid? WinnerId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }
