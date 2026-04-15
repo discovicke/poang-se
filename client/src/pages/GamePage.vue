@@ -33,6 +33,7 @@ interface Game {
   status: string
   lowerIsBetter: boolean
   maxRounds: number | null
+  startingScore: number
   winnerId: string | null
   createdAt: string
   finishedAt: string | null
@@ -163,6 +164,7 @@ onMounted(load)
         <span>Status: <span :class="statusBadge(game.status)">{{ game.status }}</span></span>
         <span>Lägre = bättre: <strong>{{ game.lowerIsBetter ? 'Ja' : 'Nej' }}</strong></span>
         <span>Max rundor: <strong>{{ game.maxRounds ?? '∞' }}</strong></span>
+        <span v-if="game.startingScore !== 0">Startpoäng: <strong>{{ game.startingScore }}</strong></span>
       </div>
 
       <!-- Banner för vinnare i slutet av spelet -->
