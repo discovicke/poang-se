@@ -2,14 +2,27 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using server.Models;
 
+/// <summary>
+/// EF Core-databaskontext för applikationen.
+/// Exponerar DbSet:ar för samtliga entiteter och konfigurerar relationer i <see cref="OnModelCreating"/>.
+/// </summary>
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    /// <summary>Alla spel.</summary>
     public DbSet<Game> Games => Set<Game>();
+    /// <summary>Alla registrerade spelare.</summary>
     public DbSet<Player> Players => Set<Player>();
+    /// <summary>Kopplingstabell mellan spel och spelare.</summary>
     public DbSet<GamePlayer> GamePlayers => Set<GamePlayer>();
+    /// <summary>Lag som tillhör spel.</summary>
     public DbSet<Team> Teams => Set<Team>();
+    /// <summary>Alla poängregistreringar.</summary>
     public DbSet<Score> Scores => Set<Score>();
 
+    /// <summary>
+    /// Konfigurerar relationer, composite keys och delete-beteenden för <see cref="GamePlayer"/>,
+    /// <see cref="Team"/> och <see cref="Score"/>.
+    /// </summary>
     protected override void OnModelCreating(ModelBuilder mb)
     {
         // GamePlayer är en join-tabell med composite key

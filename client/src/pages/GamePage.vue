@@ -1,50 +1,51 @@
 ﻿<script setup lang="ts">
-import {ref, computed, onMounted, onBeforeUnmount} from 'vue'
-import * as signalR from '@microsoft/signalr'
+import {ref, onMounted, onBeforeUnmount} from 'vue'
+import type {Game} from '../types/game'
+
+import {useGameApi} from '../composables/useGameApi'
+import {useSignalR} from '../composables/useSignalR'
+import {useGameState} from '../composables/useGameState'
+
+import PageNotFound from './PageNotFound.vue'
+import GameHeader from '../components/GameHeader.vue'
+import ClaimPicker from '../components/ClaimPicker.vue'
+import GameLobby from '../components/GameLobby.vue'
+import GameControls from '../components/GameControls.vue'
+import Scoreboard from '../components/Scoreboard.vue'
+import ScoreMatrix from '../components/ScoreMatrix.vue'
 
 const props = defineProps<{ id: string }>()
 
-interface Team {
-  id: string
-  name: string
-}
-
-interface GamePlayer {
-  playerId: string
-  playerName: string
-  teamId: string | null
-  teamName: string | null
-  joinedAt: string
-}
-
-interface ScoreEntry {
-  id: string
-  playerId: string
-  playerName: string
-  teamId: string | null
-  round: number | null
-  value: number
-  cumulativeValue: number | null
-  createdAt: string
-}
-
-interface Game {
-  id: string
-  name: string
-  status: string
-  lowerIsBetter: boolean
-  maxRounds: number | null
-  startingScore: number
-  winnerId: string | null
-  createdAt: string
-  finishedAt: string | null
-  teams: Team[]
-  players: GamePlayer[]
-  scores: ScoreEntry[]
-}
-const shareUrl = computed(() => `${window.location.origin}/games/${props.id}`)
+/* -- Composables -- */
+const api = useGameApi(props.id)
+const hub = useSignalR(props.id)
 
 const game = ref<Game | null>(null)
+const state = useGameState(game, props.id)
+
+/* -- Refresh helper (Används av SignalR för callbacks också) -- */
+async function refresh() {
+  const g = await api.fetchGame()
+  if (g)
+    game.value = g
+}
+
+/* -- Lobby funktioner -- */
+async function onSaveSettings(settings: Record<string, unknown>) {
+  const secret = localStorage.getItem(`creator:${props.id}`)
+
+  if (!secret)
+    return
+
+  const g = await api.saveSettings(secret, settings as any)
+  if (g)
+    game.value = g
+}
+
+async function onAddTeam(name: string) {
+  const g = await api.addTeam(name)
+  if (g)
+    game.value = g
 const loading = ref(true)
 
 // Form inputs
@@ -121,6 +122,10 @@ async function addTeam() {
   await fetchGame()
 }
 
+async function onAddPlayer(name: string, teamId: string | null) {
+  const g = await api.addPlayer(name, teamId)
+  if (g)
+    game.value = g
 async function addPlayer() {
   if (!newPlayerName.value.trim()) return
   await fetch(`/api/games/${props.id}/players/new`, {
@@ -136,6 +141,10 @@ async function addPlayer() {
   await fetchGame()
 }
 
+async function onAssignTeam(playerId: string, teamId: string | null) {
+  const g = await api.assignTeam(playerId, teamId)
+  if (g)
+    game.value = g
 async function addScore() {
   if (!scorePlayerId.value) return
   await fetch(`/api/games/${props.id}/scores`, {
@@ -158,6 +167,33 @@ async function startGame() {
   await fetchGame()
 }
 
+async function onStart() {
+  const g = await api.startGame()
+  if (g)
+    game.value = g
+}
+
+/* -- Funktioner för ett aktivt spel -- */
+async function onAdvanceRound() {
+  const g = await api.advanceRound()
+  if (g)
+    game.value = g
+}
+
+async function onPause() {
+  const g = await api.pauseGame()
+  if (g)
+    game.value = g
+}
+
+async function onFinish() {
+  const g = await api.finishGame()
+  if (g)
+    game.value = g
+}
+
+async function onAdjustScore(playerId: string, round: number, delta: number) {
+  const existing = state.scoreMatrix.value[playerId]?.[round]
 async function finishGame() {
   await fetch(`/api/games/${props.id}/finish`, { method: 'PUT', headers: authHeaders() })
   await fetchGame()
@@ -210,6 +246,9 @@ const scoreboard = computed(() => {
 async function adjustScore(playerId: string, round: number, delta: number) {
   const existing = scoreMatrix.value[playerId]?.[round]
   if (existing) {
+    const g = await api.updateScore(playerId, round, existing.value + delta)
+    if (g)
+      game.value = g
     await fetch(`/api/games/${props.id}/scores`, {
       method: 'PUT',
       headers: authHeaders(),
@@ -217,6 +256,27 @@ async function adjustScore(playerId: string, round: number, delta: number) {
     })
   } else {
     const teamId = game.value?.players.find(p => p.playerId === playerId)?.teamId ?? null
+    const g = await api.addScore(playerId, teamId, round, delta)
+    if
+    (g) game.value = g
+  }
+}
+
+/* -- Permissions helper (passad av ScoreMatrix) -- */
+function canEditPlayer(playerId: string): boolean {
+  if (!game.value)
+    return false
+
+  if (hub.claim.value?.playerId === playerId)
+    return true
+
+  if (game.value.creatorOnly)
+    return state.isCreator.value
+
+  return true
+}
+
+/* -- Share link -- */
     await fetch(`/api/games/${props.id}/scores`, {
       method: 'POST',
       headers: authHeaders(),
@@ -251,60 +311,52 @@ async function copyShareLink() {
 }
 
 async function shareLink() {
-  const url = shareUrl.value
   if (navigator.share) {
     await navigator.share({
       title: `Match ${game.value?.name}`,
-      text: `Gå med i spelet!`,
-      url,
+      text: 'Gå med i spelet!',
+      url: state.shareUrl.value
     })
   } else {
-    await copyShareLink()
+    try {
+      await navigator.clipboard.writeText(state.shareUrl.value)
+      alert('Länk kopierad!')
+    } catch {
+      alert(state.shareUrl.value)
+    }
   }
 }
 
-async function connectHub(playerId?: string) {
-  const url = playerId
-    ? `/gamehub?gameId=${props.id}&playerId=${playerId}`
-    : `/gamehub?gameId=${props.id}`
-
-  connection.value = new signalR.HubConnectionBuilder()
-    .withUrl(url)
-    .withAutomaticReconnect()
-    .build()
-
-  connection.value.on('ClaimAccepted', (c) => {
-    claim.value = c
-    localStorage.setItem(`claim:${props.id}`, JSON.stringify(c))
-  })
-
-  connection.value.on('ScoreAdded', async (newScore: ScoreEntry) => {
-    if (!game.value) return
-    game.value.scores.push(newScore)
-    fetchGame()
-  })
-
-  await connection.value.start()
+/* -- Claim handlers -- */
+async function onClaim(playerId: string | null) {
+  await hub.claimPlayer(playerId, refresh)
 }
 
+async function onUnclaim() {
+  await hub.unclaimPlayer()
+}
 
+/* -- Lifecycle -- */
 onMounted(async () => {
-  await load()
+  api.loading.value = true
+  try {
+    await refresh()
+  } finally {
+    api.loading.value = false
+  }
 
   const stored = localStorage.getItem(`claim:${props.id}`)
   if (stored) {
     const parsed = JSON.parse(stored)
-    await connectHub(parsed.playerId ?? undefined)
+    await hub.connect(refresh, parsed.playerId ?? undefined)
   } else {
-    showClaimPicker.value = true
+    hub.showClaimPicker.value = true
+    await hub.connect(refresh)
   }
 })
 
 onBeforeUnmount(async () => {
-  if (connection.value) {
-    await connection.value.invoke('LeaveGame', props.id)
-    await connection.value.stop()
-  }
+  await hub.disconnect()
 })
 </script>
 
@@ -320,194 +372,98 @@ onBeforeUnmount(async () => {
     </div>
 
     <template v-else>
-    <div v-if="showClaimPicker && game" class="card">
-      <h2>Vem är du?</h2>
-      <div class="claim-buttons">
-        <button v-for="p in game.players" :key="p.playerId" class="btn-primary" @click="claimPlayer(p.playerId)">
-          {{ p.playerName }}
-        </button>
-        <button class="btn-secondary" @click="claimPlayer(null)">👁 Jag är åskådare</button>
-      </div>
-    </div>
+    <!-- <router-link to="/" class="back-link">← Tillbaka</router-link> -->
 
-    <router-link to="/" class="back-link">← Tillbaka</router-link>
-
-    <div v-if="loading" class="card">Laddar...</div>
-
-    <div v-else-if="!game" class="card">
-      <h2>Spelet hittades inte</h2>
-    </div>
+    <div v-if="api.loading.value" class="card">Laddar...</div>
+    <PageNotFound v-else-if="!game" />
 
     <template v-else>
-      <!-- Header -->
-      <h1>{{ game.name }}</h1>
-      <div class="game-meta">
-        <span>Status: <span :class="statusBadge(game.status)">{{ game.status }}</span></span>
-        <span>Lägre = bättre: <strong>{{ game.lowerIsBetter ? 'Ja' : 'Nej' }}</strong></span>
-        <span>Max rundor: <strong>{{ game.maxRounds ?? '∞' }}</strong></span>
-        <span v-if="game.startingScore !== 0">Startpoäng: <strong>{{ game.startingScore }}</strong></span>
-      </div>
+      <!-- Header (alltid synlig) -->
+      <GameHeader :game="game" :winner-name="state.winnerName.value"/>
 
-      <!-- Banner för vinnare i slutet av spelet -->
-      <div v-if="game.status === 'Finished'" class="winner-banner">
-        <strong>Spelet avslutat!</strong>
-        <span v-if="winnerName"> Vinnare: <strong>{{ winnerName }}</strong></span>
-        <br/>
-        <small class="text-muted">Avslutat: {{ new Date(game.finishedAt!).toLocaleString('sv-SE') }}</small>
-      </div>
+      <!-- Claim picker / info -->
+      <ClaimPicker
+        :players="game.players"
+        :can-switch-claim="state.canSwitchClaim.value"
+        :claim="hub.claim.value"
+        :show-picker="hub.showClaimPicker.value"
+        :connection-id="hub.connection.value?.connectionId ?? null"
+        @claim="onClaim"
+        @unclaim="onUnclaim"
+      />
 
-      <!-- Status kontroller -->
-      <div v-if="game.status === 'Waiting'" class="card">
-        <button class="btn-success" @click="startGame">Starta spel</button>
-        <button @click="shareLink" class="btn-copy">Copy GameURl</button>
-      </div>
-      <div v-if="game.status === 'Active'" class="card">
-        <button class="btn-danger" @click="finishGame">Avsluta spel</button>
-        <button @click="shareLink" class="btn-copy">Copy GameURl</button>
+      <!-- === WAITING | LOBBY === -->
+      <GameLobby
+        v-if="game.status === 'Waiting'"
+        :game="game"
+        :is-creator="state.isCreator.value"
+        @save="onSaveSettings"
+        @add-team="onAddTeam"
+        @add-player="onAddPlayer"
+        @assign-team="onAssignTeam"
+        @start="onStart"
+        @share="shareLink"
+      />
 
-      </div>
+      <!-- === ACTIVE === -->
+      <template v-if="game.status === 'Active'">
+        <GameControls
+          :game="game"
+          :can-edit="state.canEdit.value"
+          :is-creator="state.isCreator.value"
+          @advance-round="onAdvanceRound"
+          @pause="onPause"
+          @finish="onFinish"
+          @share="shareLink"
+        />
 
-      <!-- Lag -->
-      <div class="card">
-        <h2>Lag</h2>
-        <ul v-if="game.teams.length" class="player-list">
-          <li v-for="t in game.teams" :key="t.id">{{ t.name }}</li>
-        </ul>
-        <p v-else class="empty">Inga lag (individuellt spel)</p>
-        <form v-if="game.status === 'Waiting'" @submit.prevent="addTeam" class="form-row">
-          <input v-model="newTeamName" placeholder="Lagnamn"/>
-          <button type="submit" class="btn-primary">Lägg till lag</button>
-        </form>
-      </div>
+        <Scoreboard
+          :scoreboard="state.scoreboard.value"
+          :has-teams="game.teams.length > 0"
+          :starting-score="game.startingScore"
+          :winner-id="null"
+          :show-crown="true"
+        />
 
-      <!-- Spelare -->
-      <div class="card">
-        <h2>Spelare i spelet</h2>
-        <table v-if="game.players.length">
-          <thead>
-          <tr>
-            <th>Spelare</th>
-            <th>Lag</th>
-            <th>Gick med</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="p in game.players" :key="p.playerId">
-            <td>{{ p.playerName }}</td>
-            <td>{{ p.teamName ?? '–' }}</td>
-            <td class="text-muted">{{ new Date(p.joinedAt).toLocaleString('sv-SE') }}</td>
-          </tr>
-          </tbody>
-        </table>
-        <p v-else class="empty">Inga spelare ännu.</p>
+        <ScoreMatrix
+          :players="game.players"
+          :rounds="state.rounds.value"
+          :current-round="game.currentRound"
+          :score-increment="game.scoreIncrement"
+          :starting-score="game.startingScore"
+          :readonly="false"
+          :score-matrix="state.scoreMatrix.value"
+          :can-edit-player="canEditPlayer"
+          :get-score-value="state.getScoreValue"
+          :player-display-total="state.playerDisplayTotal"
+          @adjust="onAdjustScore"
+        />
+      </template>
 
-        <form v-if="game.status !== 'Finished'" @submit.prevent="addPlayer" class="form-row">
-          <input v-model="newPlayerName" placeholder="Spelarnamn"/>
-          <select v-model="selectedTeamId" v-if="game.teams.length">
-            <option :value="null">Inget lag</option>
-            <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
-          </select>
-          <button type="submit" class="btn-primary" :disabled="!newPlayerName.trim()">Lägg till spelare</button>
-        </form>
-      </div>
+      <!-- === FINISHED === -->
+      <template v-if="game.status === 'Finished'">
+        <Scoreboard
+          :scoreboard="state.scoreboard.value"
+          :has-teams="game.teams.length > 0"
+          :starting-score="game.startingScore"
+          :winner-id="game.winnerId"
+        >
+          <template #title>Slutställning</template>
+        </Scoreboard>
 
-      <!-- Poängställning -->
-      <div class="card">
-        <h2>Ställning</h2>
-        <table v-if="scoreboard.length">
-          <thead>
-          <tr>
-            <th>#</th>
-            <th>Spelare</th>
-            <th>Lag</th>
-            <th class="text-right">Total</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="(s, i) in scoreboard" :key="s.playerId" :class="{ 'winner-row': s.playerId === game.winnerId }">
-            <td>{{ i + 1 }}</td>
-            <td>
-              {{ s.name }}
-              <span v-if="s.playerId === game.winnerId"> 🏆</span>
-            </td>
-            <td>{{ s.teamName ?? '–' }}</td>
-            <td class="text-right">{{ s.total }}</td>
-          </tr>
-          </tbody>
-        </table>
-        <p v-else class="empty">Inga poäng ännu.</p>
-      </div>
-
-      <!-- Lägga till poäng -->
-      <div v-if="game.status === 'Active'" class="card">
-        <h2>Lägg till poäng</h2>
-        <form @submit.prevent="addScore" class="form-row">
-          <div class="label">
-            Spelare
-            <select v-model="scorePlayerId">
-              <option value="" disabled>Välj spelare...</option>
-              <option v-for="p in game.players" :key="p.playerId" :value="p.playerId">{{ p.playerName }}</option>
-            </select>
-          </div>
-          <div v-if="game.teams.length" class="label">
-            Lag
-            <select v-model="scoreTeamId">
-              <option :value="null">–</option>
-              <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
-            </select>
-          </div>
-          <div class="label">
-            Runda
-            <input type="number" v-model.number="scoreRound" min="1"/>
-          </div>
-          <div class="label">
-            Poäng
-            <input type="number" v-model.number="scoreValue" step="any"/>
-          </div>
-          <button type="submit" class="btn-success" :disabled="!scorePlayerId">Registrera poäng</button>
-        </form>
-      </div>
-
-      <!-- Poänghistorik -->
-      <div v-if="game.players.length" class="card">
-        <h2>Poänghistorik</h2>
-        <div class="score-matrix-wrapper">
-          <table class="score-matrix">
-            <thead>
-            <tr>
-              <th class="round-col">Runda</th>
-              <th v-for="p in game.players" :key="p.playerId" class="player-col">{{ p.playerName }}</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="r in rounds" :key="r">
-              <td class="player-name">R{{ r }}</td>
-              <td v-for="p in game.players" :key="p.playerId" class="score-cell-td">
-                <div class="score-cell">
-                  <button class="sc-btn sc-minus"
-                          :disabled="game.status === 'Finished'"
-                          @click="adjustScore(p.playerId, r, -1)">−</button>
-                  <span class="sc-val">{{ getScoreValue(p.playerId, r) }}</span>
-                  <button class="sc-btn sc-plus"
-                          :disabled="game.status === 'Finished'"
-                          @click="adjustScore(p.playerId, r, 1)">+</button>
-                </div>
-              </td>
-            </tr>
-            </tbody>
-            <tfoot>
-            <tr>
-              <td class="player-name">Total</td>
-              <td v-for="p in game.players" :key="p.playerId" class="total-val">
-                {{ playerTotal(p.playerId) }}
-              </td>
-            </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-
+        <ScoreMatrix
+          :players="game.players"
+          :rounds="state.rounds.value"
+          :current-round="game.currentRound"
+          :score-increment="game.scoreIncrement"
+          :starting-score="game.startingScore"
+          :readonly="true"
+          :score-matrix="state.scoreMatrix.value"
+          :can-edit-player="() => false"
+          :get-score-value="state.getScoreValue"
+          :player-display-total="state.playerDisplayTotal"
+        />
+      </template>
     </template>
     </template>
   </div>

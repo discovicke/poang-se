@@ -47,3 +47,19 @@ public class UpdateScoreValueDto
     public double Value { get; set; }
 }
 
+public class UpdateGameSettingsDto
+{
+    public int? MaxRounds { get; set; }
+    public double? ScoreIncrement { get; set; }
+    public bool? LowerIsBetter { get; set; }
+    public bool? CreatorOnly { get; set; }
+    public bool? TeamBasedWinner { get; set; }
+    public string? GameMode { get; set; }
+    public int? GameModeValue { get; set; }
+}
+
+public class AssignPlayerToTeamDto
+{
+    public Guid PlayerId { get; set; }
+    public Guid? TeamId { get; set; }
+}

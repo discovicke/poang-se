@@ -1,37 +1,49 @@
-﻿using Microsoft.EntityFrameworkCore.Internal;
-using server.Dtos;
+﻿using server.Dtos;
+using server.Mappers;
 using server.Helpers;
 using server.Models;
 using server.Service;
 
 namespace server.Endpoints;
 
+/// <summary>
+/// Registrerar alla spel-relaterade Minimal API-endpoints under prefixet <c>/api/games</c>.
+/// Delegerar affärslogik till <see cref="GameServices"/> och responsmappning till <see cref="GameMapper"/>.
+/// </summary>
 public static class GameEndpointMapper
 {
+    /// <summary>
+    /// Kopplar endpoints till <paramref name="app"/>:
+    /// <list type="bullet">
+    ///   <item><c>GET    /api/games</c> – lista alla spel</item>
+    ///   <item><c>GET    /api/games/{id}</c> – fullständig speldetalj</item>
+    ///   <item><c>POST   /api/games</c> – skapa spel</item>
+    ///   <item><c>PUT    /api/games/{id}/settings</c> – uppdatera lobbyinställningar</item>
+    ///   <item><c>POST   /api/games/{id}/teams</c> – lägg till lag</item>
+    ///   <item><c>POST   /api/games/{id}/players</c> – lägg till befintlig spelare</item>
+    ///   <item><c>POST   /api/games/{id}/players/new</c> – skapa och lägg till ny spelare</item>
+    ///   <item><c>PUT    /api/games/{id}/players/team</c> – tilldela spelare till lag</item>
+    ///   <item><c>POST   /api/games/{id}/scores</c> – registrera poäng</item>
+    ///   <item><c>PUT    /api/games/{id}/scores</c> – uppdatera poäng i specifik runda</item>
+    ///   <item><c>PUT    /api/games/{id}/start</c> – starta spel</item>
+    ///   <item><c>PUT    /api/games/{id}/pause</c> – pausa spel</item>
+    ///   <item><c>PUT    /api/games/{id}/advance-round</c> – avancera till nästa runda</item>
+    ///   <item><c>PUT    /api/games/{id}/finish</c> – avsluta spel och beräkna vinnare</item>
+    /// </list>
+    /// </summary>
     public static WebApplication GameEndpoints(this WebApplication app)
     {
-        // Lista alla matcher
         app.MapGet("/api/games", async (GameServices svc) =>
         {
             var games = await svc.GetAllGames();
-            return Results.Ok(games.Select(g => new
-            {
-                g.Id,
-                g.Name,
-                Status = g.Status.ToString(),
-                g.IsPrivate,
-                g.CreatedAt
-            }));
+            return Results.Ok(games);
         });
 
         // Hämta match (med all relevant data)
-        app.MapGet("/api/games/{id:guid}", async (Guid id, GameServices svc, HttpContext ctx) =>
+        app.MapGet("/api/games/{id:guid}", async (Guid id, GameServices svc) =>
         {
             var game = await svc.GetGameById(id);
             if (game is null) return Results.NotFound();
-
-            if (game.IsPrivate && !IsAuthorized(game, ctx))
-                return Results.Json(new { game.IsPrivate, game.Name }, statusCode: 403);
 
             return Results.Ok(new
             {
@@ -69,12 +81,8 @@ public static class GameEndpointMapper
             });
         });
 
-        // Skapa ny match
         app.MapPost("/api/games", async (CreateGameDto dto, GameServices svc) =>
         {
-            if (dto.IsPrivate && string.IsNullOrWhiteSpace(dto.GamePassword))
-                return Results.BadRequest("Lösenord krävs för privata matcher.");
-
             var game = new Game
             {
                 Id = Guid.NewGuid(),
@@ -82,8 +90,6 @@ public static class GameEndpointMapper
                 LowerIsBetter = dto.LowerIsBetter,
                 MaxRounds = dto.MaxRounds,
                 StartingScore = dto.StartingScore,
-                IsPrivate = dto.IsPrivate,
-                PasswordHash = dto.IsPrivate ? GameTokenHelper.HashPassword(dto.GamePassword!) : null,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -96,7 +102,6 @@ public static class GameEndpointMapper
                 game.LowerIsBetter,
                 game.MaxRounds,
                 game.StartingScore,
-                game.IsPrivate,
                 game.CreatedAt
             });
         });
@@ -104,22 +109,13 @@ public static class GameEndpointMapper
         // Lägga till lag till en match
         app.MapPost("/api/games/{id:guid}/teams", async (Guid id, AddTeamDto dto, GameServices svc) =>
         {
-            var team = new Team
-            {
-                Id = Guid.NewGuid(),
-                GameId = id,
-                Name = dto.Name
-            };
-
+            var team = new Team { Id = Guid.NewGuid(), GameId = id, Name = dto.Name };
             await svc.AddTeam(team);
             return Results.Created($"/games/{id}/teams/{team.Id}", new { team.Id, team.Name });
         });
 
         app.MapPost("/api/games/{id:guid}/players", async (Guid id, AddPlayerToGameDto dto, GameServices svc) =>
         {
-            var game = await svc.GetGameById(id);
-            if (game is null) return Results.NotFound();
-
             var gp = new GamePlayer
             {
                 GameId = id,
@@ -127,35 +123,16 @@ public static class GameEndpointMapper
                 TeamId = dto.TeamId,
                 JoinedAt = DateTime.UtcNow
             };
-
             var result = await svc.AddPlayerToGame(gp);
-            if (result is null) return Results.Conflict("Player already in game");
-
-            if (game.StartingScore != 0)
-            {
-                var initialScore = new Score
-                {
-                    Id = Guid.NewGuid(),
-                    GameId = id,
-                    PlayerId = dto.PlayerId,
-                    Round = null,
-                    Value = game.StartingScore,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await svc.AddScore(initialScore);
-            }
-
-            return Results.Created($"/games/{id}", new { gp.GameId, gp.PlayerId, gp.TeamId });
+            return result is null
+                ? Results.Conflict("Player already in game")
+                : Results.Created($"/games/{id}", new { gp.GameId, gp.PlayerId, gp.TeamId });
         });
 
-        // Skapa en ny spelare och lägg direkt till i matchen
         app.MapPost("/api/games/{id:guid}/players/new", async (Guid id, CreatePlayerForGameDto dto, GameServices svc, PlayerServices playerSvc) =>
         {
             if (string.IsNullOrWhiteSpace(dto.UserName))
                 return Results.BadRequest("UserName krävs");
-
-            var game = await svc.GetGameById(id);
-            if (game is null) return Results.NotFound();
 
             var player = new Player
             {
@@ -174,24 +151,17 @@ public static class GameEndpointMapper
             };
             await svc.AddPlayerToGame(gp);
 
-            if (game.StartingScore != 0)
-            {
-                var initialScore = new Score
-                {
-                    Id = Guid.NewGuid(),
-                    GameId = id,
-                    PlayerId = player.Id,
-                    Round = null,
-                    Value = game.StartingScore,
-                    CreatedAt = DateTime.UtcNow
-                };
-                await svc.AddScore(initialScore);
-            }
-
             return Results.Created($"/games/{id}", new { player.Id, player.UserName, gp.GameId, gp.TeamId });
         });
 
-        // Lägga till poäng till en match
+        app.MapPut("/api/games/{id:guid}/players/team", async (Guid id, AssignPlayerToTeamDto dto, GameServices svc) =>
+        {
+            var result = await svc.AssignPlayerToTeam(id, dto.PlayerId, dto.TeamId);
+            return result is null
+                ? Results.NotFound()
+                : Results.Ok(new { result.PlayerId, result.TeamId });
+        });
+
         app.MapPost("/api/games/{id:guid}/scores", async (Guid id, AddScoreToGameDto dto, GameServices svc) =>
         {
             var score = new Score
@@ -204,82 +174,52 @@ public static class GameEndpointMapper
                 Value = dto.Value,
                 CreatedAt = DateTime.UtcNow
             };
-
             var result = await svc.AddScore(score);
-            return Results.Created($"/games/{id}/scores/{result.Id}", new
-            {
-                result.Id,
-                result.PlayerId,
-                result.Round,
-                result.Value,
-                result.CumulativeValue
-            });
+            return Results.Created($"/games/{id}/scores/{result.Id}", result.ToScoreResponse());
         });
 
-        // Uppdatera poäng i en specifik runda och indexera om kumulativa värden
         app.MapPut("/api/games/{id:guid}/scores", async (Guid id, UpdateScoreValueDto dto, GameServices svc) =>
         {
             var result = await svc.UpdateScoreValue(id, dto.PlayerId, dto.Round, dto.Value);
-            if (result == null)
-                return Results.NotFound();
-            return Results.Ok(new
-            {
-                result.Id,
-                result.PlayerId,
-                result.Round,
-                result.Value,
-                result.CumulativeValue
-            });
+            return result is null
+                ? Results.NotFound()
+                : Results.Ok(result.ToScoreResponse());
         });
 
-        app.MapPost("/api/games/{id:guid}/unlock", async (Guid id, UnlockGameDto dto, GameServices svc) =>
-        {
-            var game = await svc.GetGameById(id);
-            if (game is null) return Results.NotFound();
-            if (!game.IsPrivate) return Results.BadRequest("Matchen är inte privat.");
-
-            var hash = GameTokenHelper.HashPassword(dto.Password);
-            if (hash != game.PasswordHash)
-                return Results.Json(new { error = "Fel lösenord." }, statusCode: 401);
-
-            var token = GameTokenHelper.GenerateToken(game.Id);
-            return Results.Ok(new { token });
-        });
 
         // Starta en match (ändrar enum status till Started)
         app.MapPut("/api/games/{id:guid}/start", async (Guid id, GameServices svc) =>
         {
             var game = await svc.StartGame(id);
-            if (game is null) return Results.NotFound();
-            return Results.Ok(new { game.Id, Status = game.Status.ToString() });
+            return game is null
+                ? Results.NotFound()
+                : Results.Ok(game.ToStatusResponse());
         });
 
-        // Starta en match (ändrar enum status till Finished)
+        app.MapPut("/api/games/{id:guid}/pause", async (Guid id, GameServices svc) =>
+        {
+            var game = await svc.PauseGame(id);
+            return game is null
+                ? Results.NotFound()
+                : Results.Ok(game.ToStatusResponse());
+        });
+
+        app.MapPut("/api/games/{id:guid}/advance-round", async (Guid id, GameServices svc) =>
+        {
+            var game = await svc.AdvanceRound(id);
+            return game is null
+                ? Results.NotFound()
+                : Results.Ok(new { game.Id, game.CurrentRound });
+        });
+
         app.MapPut("/api/games/{id:guid}/finish", async (Guid id, GameServices svc) =>
         {
             var game = await svc.FinishGame(id);
-            if (game is null) return Results.NotFound();
-            return Results.Ok(new
-            {
-                game.Id,
-                Status = game.Status.ToString(),
-                game.WinnerId,
-                game.FinishedAt
-            });
+            return game is null
+                ? Results.NotFound()
+                : Results.Ok(game.ToFinishResponse());
         });
 
         return app;
-    }
-
-    private static bool IsAuthorized(Game game, HttpContext ctx)
-    {
-        if (!game.IsPrivate) return true;
-        var auth = ctx.Request.Headers.Authorization.FirstOrDefault();
-        if (auth?.StartsWith("Bearer ") == true)
-        {
-            var token = auth["Bearer ".Length..];
-            return GameTokenHelper.ValidateToken(game.Id, token);
-        }
-        return false;
     }
 }

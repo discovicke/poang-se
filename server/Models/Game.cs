@@ -16,6 +16,27 @@ public class Game
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }
 
+    /// <summary>Hemlig nyckel som identifierar spelskaparen. Returneras bara vid skapande.</summary>
+    public Guid CreatorSecret { get; set; } = Guid.NewGuid();
+
+    /// <summary>Bara skaparen kan redigera poäng under Active.</summary>
+    public bool CreatorOnly { get; set; } = false;
+
+    /// <summary>Hur mycket +/−-knapparna ändrar per klick.</summary>
+    public double ScoreIncrement { get; set; } = 1;
+
+    /// <summary>Om true bestäms vinnaren av lagpoäng istället för individuella.</summary>
+    public bool TeamBasedWinner { get; set; } = false;
+
+    /// <summary>Vilken runda som är aktiv (1-baserad).</summary>
+    public int CurrentRound { get; set; } = 1;
+
+    /// <summary>Null = standard, "BestOf" eller "FirstTo".</summary>
+    public string? GameMode { get; set; }
+
+    /// <summary>X-värdet för "Bäst av X" eller "Först till X".</summary>
+    public int? GameModeValue { get; set; }
+
     public List<GamePlayer> GamePlayers { get; set; } = new();
     public List<Team> Teams { get; set; } = new();
     public List<Score> Scores { get; set; } = new();

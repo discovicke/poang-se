@@ -10,6 +10,9 @@ public class GamePlayer
     public Guid? TeamId { get; set; }
     public DateTime JoinedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>SignalR connection-id för den som claimat denna spelplats. Null = ej claimad.</summary>
+    public string? ClaimedByConnectionId { get; set; }
+
     public Game Game { get; set; } = null!;
     public Player Player { get; set; } = null!;
     public Team? Team { get; set; }
