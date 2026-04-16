@@ -9,6 +9,19 @@ namespace server.Mappers;
 public static class GameMapper
 {
     /// <summary>
+    /// Säker listprojektion för <c>GET /api/games</c>.
+    /// Exponerar aldrig PasswordHash eller CreatorSecret.
+    /// </summary>
+    public static object ToListResponse(this Game game) => new
+    {
+        game.Id,
+        game.Name,
+        Status = game.Status.ToString(),
+        game.IsPrivate,
+        game.CreatedAt
+    };
+
+    /// <summary>
     /// Fullständig speldetalj med lag, spelare och poänghistorik.
     /// Används av <c>GET /api/games/{id}</c>.
     /// </summary>
@@ -29,6 +42,7 @@ public static class GameMapper
         game.GameMode,
         game.GameModeValue,
         game.StartingScore,
+        game.IsPrivate,
         Teams = game.Teams.Select(t => new { t.Id, t.Name }),
         Players = game.GamePlayers.Select(gp => new
         {
