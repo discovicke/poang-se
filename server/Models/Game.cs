@@ -35,6 +35,12 @@ public class Game
     /// <summary>X-värdet för "Bäst av X" eller "Först till X".</summary>
     public int? GameModeValue { get; set; }
 
+    /// <summary>Om true krävs lösenord för att se spelet.</summary>
+    public bool IsPrivate { get; set; } = false;
+
+    /// <summary>SHA-256-hash av lösenordet. Null om spelet är öppet.</summary>
+    public string? PasswordHash { get; set; }
+
     public List<GamePlayer> GamePlayers { get; set; } = new();
     public List<Team> Teams { get; set; } = new();
     public List<Score> Scores { get; set; } = new();
