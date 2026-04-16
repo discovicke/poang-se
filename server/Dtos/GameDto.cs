@@ -11,6 +11,13 @@ public class CreateGameDto
     public bool TeamBasedWinner { get; set; } = false;
     public string? GameMode { get; set; }
     public int? GameModeValue { get; set; }
+    public bool IsPrivate { get; set; } = false;
+    public string? GamePassword { get; set; }
+}
+
+public class UnlockGameDto
+{
+    public string Password { get; set; } = "";
 }
 
 public class AddTeamDto
