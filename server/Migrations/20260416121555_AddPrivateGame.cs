@@ -10,18 +10,10 @@ namespace server.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "IsPrivate",
-                table: "Games",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.AddColumn<string>(
-                name: "PasswordHash",
-                table: "Games",
-                type: "text",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                ALTER TABLE ""Games"" ADD COLUMN IF NOT EXISTS ""IsPrivate"" boolean NOT NULL DEFAULT FALSE;
+                ALTER TABLE ""Games"" ADD COLUMN IF NOT EXISTS ""PasswordHash"" text;
+            ");
         }
 
         /// <inheritdoc />

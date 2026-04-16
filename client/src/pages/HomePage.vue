@@ -22,6 +22,8 @@ const creatorOnly = ref(false)
 const scoreIncrement = ref<number>(1)
 const gameMode = ref<string | null>(null)
 const gameModeValue = ref<number | null>(null)
+const isPrivate = ref(false)
+const gamePassword = ref('')
 
 async function fetchGames() {
   const res = await fetch('/api/games')
@@ -42,6 +44,8 @@ async function createGame() {
       scoreIncrement: scoreIncrement.value,
       gameMode: gameMode.value,
       gameModeValue: gameModeValue.value,
+      isPrivate: isPrivate.value,
+      gamePassword: isPrivate.value ? gamePassword.value : null,
     }),
   })
   if (res.ok) {
@@ -56,6 +60,8 @@ async function createGame() {
     scoreIncrement.value = 1
     gameMode.value = null
     gameModeValue.value = null
+    isPrivate.value = false
+    gamePassword.value = ''
     router.push(`/games/${game.id}`)
   }
 }
@@ -85,6 +91,15 @@ onMounted(fetchGames)
           <input type="checkbox" v-model="creatorOnly"/>
           Bara skaparen kan redigera poäng
         </label>
+
+        <label>
+          <input type="checkbox" v-model="isPrivate"/>
+          Lösenordsskyddad match
+        </label>
+        <div v-if="isPrivate" class="label">
+          Lösenord
+          <input type="password" v-model="gamePassword" placeholder="Ange lösenord" required/>
+        </div>
 
         <div class="form-row">
           <div class="label">
