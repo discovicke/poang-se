@@ -140,6 +140,34 @@ async function onUnclaim() {
   await hub.unclaimPlayer()
 }
 
+/* -- Unlock -- */
+const unlockPassword = ref('')
+const unlockError = ref(false)
+
+async function onUnlock() {
+  unlockError.value = false
+  const ok = await api.unlockGame(unlockPassword.value)
+  if (ok) {
+    unlockPassword.value = ''
+    await refresh()
+    connectHub()
+  } else {
+    unlockError.value = true
+  }
+}
+
+/* -- Hub connect helper (reused after unlock) -- */
+async function connectHub() {
+  const stored = localStorage.getItem(`claim:${props.id}`)
+  if (stored) {
+    const parsed = JSON.parse(stored)
+    await hub.connect(refresh, parsed.playerId ?? undefined)
+  } else {
+    hub.showClaimPicker.value = true
+    await hub.connect(refresh)
+  }
+}
+
 /* -- Lifecycle -- */
 onMounted(async () => {
   api.loading.value = true
@@ -149,13 +177,8 @@ onMounted(async () => {
     api.loading.value = false
   }
 
-  const stored = localStorage.getItem(`claim:${props.id}`)
-  if (stored) {
-    const parsed = JSON.parse(stored)
-    await hub.connect(refresh, parsed.playerId ?? undefined)
-  } else {
-    hub.showClaimPicker.value = true
-    await hub.connect(refresh)
+  if (!api.isLocked.value) {
+    await connectHub()
   }
 })
 
@@ -169,6 +192,24 @@ onBeforeUnmount(async () => {
     <!-- <router-link to="/" class="back-link">← Tillbaka</router-link> -->
 
     <div v-if="api.loading.value" class="card">Laddar...</div>
+
+    <!-- Lösenordsskyddad match -->
+    <div v-else-if="api.isLocked.value" class="card">
+      <h2>{{ api.lockedGameName.value ?? 'Privat match' }}</h2>
+      <p>Den här matchen är lösenordsskyddad.</p>
+      <form @submit.prevent="onUnlock" class="form-col">
+        <input
+          v-model="unlockPassword"
+          type="password"
+          placeholder="Lösenord"
+          required
+          autofocus
+        />
+        <p v-if="unlockError" class="error">Fel lösenord, försök igen.</p>
+        <button type="submit" class="btn-primary">Lås upp</button>
+      </form>
+    </div>
+
     <PageNotFound v-else-if="!game" />
 
     <template v-else>
