@@ -1,4 +1,5 @@
 ﻿using server.Dtos;
+using server.Helpers;
 using server.Mappers;
 using server.Models;
 using server.Service;
@@ -33,14 +34,35 @@ public static class GameEndpointMapper
     public static WebApplication GameEndpoints(this WebApplication app)
     {
         app.MapGet("/api/games", async (GameServices svc) =>
-            Results.Ok(await svc.GetAllGames()));
+        {
+            var games = await svc.GetAllGames();
+            return Results.Ok(games.Select(g => g.ToListResponse()));
+        });
 
-        app.MapGet("/api/games/{id:guid}", async (Guid id, GameServices svc) =>
+        app.MapGet("/api/games/{id:guid}", async (Guid id, GameServices svc, HttpContext ctx) =>
         {
             var game = await svc.GetGameById(id);
-            return game is null
-                ? Results.NotFound()
-                : Results.Ok(game.ToDetailResponse());
+            if (game is null)
+                return Results.NotFound();
+
+            if (game.IsPrivate && !IsAuthorized(ctx, id))
+                return Results.Json(new { isPrivate = true, name = game.Name }, statusCode: 403);
+
+            return Results.Ok(game.ToDetailResponse());
+        });
+
+        app.MapPost("/api/games/{id:guid}/unlock", async (Guid id, UnlockGameDto dto, GameServices svc) =>
+        {
+            var game = await svc.GetGameById(id);
+            if (game is null)
+                return Results.NotFound();
+            if (!game.IsPrivate)
+                return Results.BadRequest("Game is not private");
+            if (game.PasswordHash != GameTokenHelper.HashPassword(dto.Password))
+                return Results.Unauthorized();
+
+            var token = GameTokenHelper.GenerateToken(id);
+            return Results.Ok(new { token });
         });
 
         app.MapPost("/api/games", async (CreateGameDto dto, GameServices svc) =>
