@@ -214,6 +214,19 @@ public static class GameEndpointMapper
         TeamBasedWinner = dto.TeamBasedWinner,
         GameMode = dto.GameMode,
         GameModeValue = dto.GameModeValue,
+        IsPrivate = dto.IsPrivate,
+        PasswordHash = dto.IsPrivate && !string.IsNullOrWhiteSpace(dto.GamePassword)
+            ? GameTokenHelper.HashPassword(dto.GamePassword)
+            : null,
         CreatedAt = DateTime.UtcNow
     };
+
+    private static bool IsAuthorized(HttpContext ctx, Guid gameId)
+    {
+        var auth = ctx.Request.Headers.Authorization.ToString();
+        if (!auth.StartsWith("Bearer "))
+            return false;
+        var token = auth["Bearer ".Length..];
+        return GameTokenHelper.ValidateToken(gameId, token);
+    }
 }
