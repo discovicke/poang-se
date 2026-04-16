@@ -145,7 +145,10 @@ export function useGameApi(gameId: string) {
 
   return {
     loading,
+    isLocked,
+    lockedGameName,
     fetchGame,
+    unlockGame,
     saveSettings,
     addTeam,
     addPlayer,
