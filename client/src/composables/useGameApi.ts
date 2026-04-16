@@ -8,15 +8,45 @@ import type {Game} from '../types/game'
  */
 export function useGameApi(gameId: string) {
   const loading = ref(true)
+  const isLocked = ref(false)
+  const lockedGameName = ref<string | null>(null)
 
   const base = `/api/games/${gameId}`
 
+  function authHeaders(): HeadersInit {
+    const token = localStorage.getItem(`gameToken:${gameId}`)
+    return token ? {Authorization: `Bearer ${token}`} : {}
+  }
+
   async function fetchGame(): Promise<Game | null> {
-    const res = await fetch(base)
+    const res = await fetch(base, {headers: authHeaders()})
+    if (res.status === 403) {
+      const body = await res.json().catch(() => ({}))
+      if (body.isPrivate) {
+        isLocked.value = true
+        lockedGameName.value = body.name ?? null
+      }
+      return null
+    }
+    isLocked.value = false
     if (!res.ok)
       return null
 
     return await res.json()
+  }
+
+  async function unlockGame(password: string): Promise<boolean> {
+    const res = await fetch(`${base}/unlock`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password}),
+    })
+    if (!res.ok)
+      return false
+    const {token} = await res.json()
+    localStorage.setItem(`gameToken:${gameId}`, token)
+    isLocked.value = false
+    return true
   }
 
   async function saveSettings(

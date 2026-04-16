@@ -29,6 +29,7 @@ export interface Game {
   id: string
   name: string
   status: string
+  isPrivate: boolean
   lowerIsBetter: boolean
   maxRounds: number | null
   startingScore: number
