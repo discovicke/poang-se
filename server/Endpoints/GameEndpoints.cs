@@ -218,7 +218,12 @@ public static class GameEndpointMapper
         PasswordHash = dto.IsPrivate && !string.IsNullOrWhiteSpace(dto.GamePassword)
             ? GameTokenHelper.HashPassword(dto.GamePassword)
             : null,
-        CreatedAt = DateTime.UtcNow
+        CreatedAt = DateTime.UtcNow,
+        ExpiresAt = dto.IsTemporary && dto.ExpiresAt.HasValue
+            ? dto.ExpiresAt.Value.Kind == DateTimeKind.Utc
+            ? dto.ExpiresAt.Value
+            : dto.ExpiresAt.Value.ToUniversalTime()
+            : null,
     };
 
     private static bool IsAuthorized(HttpContext ctx, Guid gameId)
