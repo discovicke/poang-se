@@ -220,6 +220,7 @@ public static class GameEndpointMapper
             ? GameTokenHelper.HashPassword(dto.GamePassword)
             : null,
         CreatedAt = DateTime.UtcNow,
+        IsTemporary = dto.IsTemporary,
         ExpiresAt = dto.IsTemporary && dto.ExpiresAt.HasValue
             ? dto.ExpiresAt.Value.Kind == DateTimeKind.Utc
             ? dto.ExpiresAt.Value
