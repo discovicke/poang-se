@@ -30,7 +30,7 @@
   - [x] Navigerar användaren till matchsidan
 
 #### Matchsida `/{matchId}`
-- [ ] 404-sida om matchId inte finns
+- [X] 404-sida om matchId inte finns
 - [x] Poängtabell för alla spelare
 - [x] Redigerbara poängvärden
 - [ ] Spelarredigering (om ej låst): namnbyte + lägg till ny spelare
@@ -39,7 +39,7 @@
 
 #### Övrigt
 - [x] Ingen inloggning krävs för att använda appen
-- [ ] "Starta spel" borde vara disabled på riktigt när inte kraven är uppfyllda. T.ex. ljusgrå istället för med färg.
+- [x] "Starta spel" borde vara disabled på riktigt när inte kraven är uppfyllda. T.ex. ljusgrå istället för med färg.
 - [ ] Ta en funderare på hur vi ska tackla problemet med spel man räknar baklänges, t.ex. 501 i dart. Jag tänkte snett och slog ihop det med "Lägst vinner"-metoden nu vilket är fel. De borde vara separerade! **/Viktor**
 - [ ] Claim blir åskådare om det inte finns färdiga användare innan länk delas.
   - [ ] Möjlighet att byta roll från åskådare till spelare måste implementeras
@@ -54,7 +54,7 @@
 - [x] "Bäst av X" / "Först till X" poäng
   - [ ] "Bäst av X" fungerar inte riktigt...
 - [ ] Turneringar / säsonger
-- [ ] Tillfälliga matcher med automatisk borttagning
+- [X] Tillfälliga matcher med automatisk borttagning
 - [ ] Anpassad statistik (ex. antal missade pilar)
 - [ ] Grafvy över poängutveckling
 - [ ] Lösenordsskyddad match (JWT i cookie/localstorage)

@@ -40,7 +40,7 @@ function statusBadge(status: string) {
       </span>
 
       <span v-if="game.isTemporary && game.expiresAt">
-         <br/><strong>⚠️ Tillfällig match!</strong>
+         <br/><strong>⚠️ Tillfälligt spel!</strong>
          <span><strong> Avslutas {{ new Date(game.expiresAt).toLocaleString('sv-SE') }}</strong></span>
       </span>
     </div>
