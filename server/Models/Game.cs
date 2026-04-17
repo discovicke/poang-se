@@ -13,6 +13,8 @@ public class Game
     public Guid? WinnerId { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? FinishedAt { get; set; }
+    public DateTime? ExpiresAt { get; set; }
+    public bool IsTemporary { get; set; } = false;
 
     /// <summary>Hemlig nyckel som identifierar spelskaparen. Returneras bara vid skapande.</summary>
     public Guid CreatorSecret { get; set; } = Guid.NewGuid();

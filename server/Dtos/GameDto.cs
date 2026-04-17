@@ -13,6 +13,8 @@ public class CreateGameDto
     public int? GameModeValue { get; set; }
     public bool IsPrivate { get; set; } = false;
     public string? GamePassword { get; set; }
+    public bool IsTemporary { get; set; } = false;
+    public DateTime? ExpiresAt { get; set; }
 }
 
 public class UnlockGameDto

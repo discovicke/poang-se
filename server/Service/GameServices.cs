@@ -15,6 +15,7 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
     public async Task<List<Game>> GetAllGames()
     {
         return await db.Games
+            .Where(g => g.ExpiresAt == null || g.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(g => g.CreatedAt)
             .ToListAsync();
     }
@@ -30,7 +31,8 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
             .Include(g => g.GamePlayers).ThenInclude(gp => gp.Player)
             .Include(g => g.GamePlayers).ThenInclude(gp => gp.Team)
             .Include(g => g.Scores).ThenInclude(s => s.Player)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id &&
+            (g.ExpiresAt == null || g.ExpiresAt > DateTime.UtcNow));
     }
 
     /// <summary>Sparar ett nytt spel i databasen och returnerar det.</summary>
@@ -447,4 +449,5 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         if (roundWins.Values.Any(w => w >= roundsToWin))
             await FinishGame(gameId);
     }
+
 }

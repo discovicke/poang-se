@@ -43,6 +43,8 @@ public static class GameMapper
         game.GameModeValue,
         game.StartingScore,
         game.IsPrivate,
+        game.IsTemporary,
+        game.ExpiresAt,
         Teams = game.Teams.Select(t => new { t.Id, t.Name }),
         Players = game.GamePlayers.Select(gp => new
         {
@@ -80,7 +82,9 @@ public static class GameMapper
         game.LowerIsBetter,
         game.MaxRounds,
         game.CreatedAt,
-        game.CreatorSecret
+        game.CreatorSecret,
+        game.IsTemporary,
+        game.ExpiresAt
     };
 
     /// <summary>
