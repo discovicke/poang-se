@@ -35,6 +35,7 @@ public static class GameEndpointMapper
     {
         app.MapGet("/api/games", async (GameServices svc) =>
         {
+            var expiredGames = await svc.RemoveExpiredGames();
             var games = await svc.GetAllGames();
             return Results.Ok(games.Select(g => g.ToListResponse()));
         });

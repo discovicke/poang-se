@@ -449,5 +449,16 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         if (roundWins.Values.Any(w => w >= roundsToWin))
             await FinishGame(gameId);
     }
+    public async Task<int> RemoveExpiredGames()
+    {
+        var now = DateTime.UtcNow;
+        var expired = await db.Games
+            .Where(g => g.ExpiresAt != null && g.ExpiresAt <= now)
+            .ToListAsync();
+
+        db.Games.RemoveRange(expired);
+        await db.SaveChangesAsync();
+        return expired.Count;
+    }
 
 }
