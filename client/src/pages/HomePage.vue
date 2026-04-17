@@ -24,6 +24,8 @@ const gameMode = ref<string | null>(null)
 const gameModeValue = ref<number | null>(null)
 const isPrivate = ref(false)
 const gamePassword = ref('')
+const isTemporary = ref(false)
+const expiresAt = ref<string | null>(null)
 
 async function fetchGames() {
   const res = await fetch('/api/games')
@@ -46,6 +48,8 @@ async function createGame() {
       gameModeValue: gameModeValue.value,
       isPrivate: isPrivate.value,
       gamePassword: isPrivate.value ? gamePassword.value : null,
+      isTemporary: isTemporary.value,
+      expiresAt: isTemporary.value ? expiresAt.value : null,
     }),
   })
   if (res.ok) {
@@ -99,6 +103,15 @@ onMounted(fetchGames)
         <div v-if="isPrivate" class="label">
           Lösenord
           <input type="password" v-model="gamePassword" placeholder="Ange lösenord" required/>
+        </div>
+
+        <label>
+          <input type="checkbox" v-model="isTemporary"/>
+          Tillfällig match (avslutas efter angivet datum)
+        </label>
+        <div v-if="isTemporary" class="label">
+          Tillfällig match - Hur länge ska matchen vara aktiv?
+          <input type="datetime-local" v-model="expiresAt"/>
         </div>
 
         <div class="form-row">
