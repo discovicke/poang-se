@@ -14,6 +14,7 @@ import GameLobby from '../components/GameLobby.vue'
 import GameControls from '../components/GameControls.vue'
 import Scoreboard from '../components/Scoreboard.vue'
 import ScoreMatrix from '../components/ScoreMatrix.vue'
+import ScoreCharts from '../components/ScoreCharts.vue'
 
 const props = defineProps<{ id: string }>()
 const router = useRouter()
@@ -250,6 +251,7 @@ onBeforeUnmount(async () => {
       </form>
     </div>
 
+
     <PageNotFound v-else-if="!game" />
 
     <template v-else>
@@ -334,18 +336,20 @@ onBeforeUnmount(async () => {
           <template #title>Slutställning</template>
         </Scoreboard>
 
+        
         <ScoreMatrix
-          :players="game.players"
-          :rounds="state.rounds.value"
-          :current-round="game.currentRound"
-          :score-increment="game.scoreIncrement"
-          :starting-score="game.startingScore"
-          :readonly="true"
-          :score-matrix="state.scoreMatrix.value"
-          :can-edit-player="() => false"
-          :get-score-value="state.getScoreValue"
-          :player-display-total="state.playerDisplayTotal"
+        :players="game.players"
+        :rounds="state.rounds.value"
+        :current-round="game.currentRound"
+        :score-increment="game.scoreIncrement"
+        :starting-score="game.startingScore"
+        :readonly="true"
+        :score-matrix="state.scoreMatrix.value"
+        :can-edit-player="() => false"
+        :get-score-value="state.getScoreValue"
+        :player-display-total="state.playerDisplayTotal"
         />
+        <ScoreCharts v-if="game.status === 'Finished'" :gameId="game.id" />
       </template>
     </template>
   </div>
