@@ -6,8 +6,11 @@ using server.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var envPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".env"));
-Env.Load(envPath);
+if (builder.Environment.IsDevelopment())
+{
+    var envPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".env"));
+    Env.Load(envPath);
+}
 
 var connString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "";
 
