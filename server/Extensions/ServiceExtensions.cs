@@ -26,7 +26,9 @@ public static class ServiceExtensions
     {
         services.AddScoped<PlayerServices>();
         services.AddScoped<ScoreServices>();
-        services.AddScoped<GameServices>();
+        services.AddScoped<GameScoringService>();
+        services.AddScoped<GamePlayerService>();
+        services.AddScoped<GameLifecycleService>();
         return services;
     }
 

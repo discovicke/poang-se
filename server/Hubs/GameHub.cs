@@ -9,7 +9,7 @@ namespace server.Hubs;
 /// Hanterar anslutning med claim-logik (spelare/åskådare/creator),
 /// gruppbaserade notifieringar per match-id samt automatisk unclaim vid frånkoppling.
 /// </summary>
-public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
+public class GameHub(AppDbContext db, GamePlayerService playerSvc) : Hub
 {
     /// <summary>
     /// Körs när en klient ansluter. Förväntar sig query-parametrarna
@@ -64,7 +64,7 @@ public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
     public async Task UnclaimPlayer(string gameIdStr, string playerIdStr)
     {
         if (Guid.TryParse(gameIdStr, out var gameId) && Guid.TryParse(playerIdStr, out var playerId))
-            await gameSvc.UnclaimPlayer(gameId, playerId, Context.ConnectionId);
+            await playerSvc.UnclaimPlayer(gameId, playerId, Context.ConnectionId);
     }
 
     /// <summary>Tar bort klientens SignalR-anslutning från spelets grupp.</summary>
@@ -76,7 +76,7 @@ public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
     /// </summary>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        await gameSvc.UnclaimByConnection(Context.ConnectionId);
+        await playerSvc.UnclaimByConnection(Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
     }
 
@@ -123,7 +123,7 @@ public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
             return;
         }
 
-        var claimed = await gameSvc.ClaimPlayer(gameId, playerId, Context.ConnectionId);
+        var claimed = await playerSvc.ClaimPlayer(gameId, playerId, Context.ConnectionId);
         await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
 
         if (claimed is null)

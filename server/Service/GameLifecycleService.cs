@@ -1,0 +1,265 @@
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using server.Dtos;
+using server.Hubs;
+using server.Models;
+
+namespace server.Service;
+
+/// <summary>
+/// Hanterar spelets livscykel: CRUD, statusövergångar (start/paus/finish),
+/// reset, rematch, avancera runda och inställningar.
+/// </summary>
+public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, GameScoringService scoring)
+{
+    /// <summary>Returnerar alla spel sorterade med senast skapade först.</summary>
+    public async Task<List<Game>> GetAllGames()
+    {
+        return await db.Games
+            .Where(g => g.ExpiresAt == null || g.ExpiresAt > DateTime.UtcNow)
+            .OrderByDescending(g => g.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Hämtar ett spel med fullständiga includes: lag, spelare (med spelarentitet och lag)
+    /// samt poäng (med spelarentitet).
+    /// </summary>
+    public async Task<Game?> GetGameById(Guid id)
+    {
+        return await db.Games
+            .Include(g => g.Teams)
+            .Include(g => g.GamePlayers).ThenInclude(gp => gp.Player)
+            .Include(g => g.GamePlayers).ThenInclude(gp => gp.Team)
+            .Include(g => g.Scores).ThenInclude(s => s.Player)
+            .FirstOrDefaultAsync(g => g.Id == id &&
+                (g.ExpiresAt == null || g.ExpiresAt > DateTime.UtcNow));
+    }
+
+    /// <summary>Sparar ett nytt spel i databasen och returnerar det.</summary>
+    public async Task<Game> CreateGame(Game game)
+    {
+        db.Games.Add(game);
+        await db.SaveChangesAsync();
+        return game;
+    }
+
+    /// <summary>
+    /// Uppdaterar lobbyinställningar för ett spel om anroparen är creator
+    /// och spelet fortfarande är i <c>Waiting</c>-status.
+    /// </summary>
+    public async Task<Game?> UpdateSettings(Guid gameId, UpdateGameSettingsDto dto, Guid creatorSecret)
+    {
+        var game = await db.Games.FindAsync(gameId);
+        if (game == null)
+            return null;
+        if (game.CreatorSecret != creatorSecret)
+            return null;
+        if (game.Status != GameStatus.Waiting)
+            return null;
+
+        if (dto.MaxRounds.HasValue)
+            game.MaxRounds = dto.MaxRounds.Value;
+        if (dto.ScoreIncrement.HasValue)
+            game.ScoreIncrement = dto.ScoreIncrement.Value;
+        if (dto.LowerIsBetter.HasValue)
+            game.LowerIsBetter = dto.LowerIsBetter.Value;
+        if (dto.CreatorOnly.HasValue)
+            game.CreatorOnly = dto.CreatorOnly.Value;
+        if (dto.TeamBasedWinner.HasValue)
+            game.TeamBasedWinner = dto.TeamBasedWinner.Value;
+        if (dto.GameMode != null)
+            game.GameMode = dto.GameMode;
+        if (dto.GameModeValue.HasValue)
+            game.GameModeValue = dto.GameModeValue.Value;
+        if (dto.GameModeTarget != null)
+            game.GameModeTarget = dto.GameModeTarget;
+
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
+        return game;
+    }
+
+    /// <summary>Startar spelet (status → Active, CurrentRound = 1).</summary>
+    public async Task<Game?> StartGame(Guid id)
+    {
+        var game = await db.Games
+            .Include(g => g.GamePlayers)
+            .FirstOrDefaultAsync(g => g.Id == id);
+        if (game == null)
+            return null;
+
+        game.Status = GameStatus.Active;
+        game.CurrentRound = 1;
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
+        return game;
+    }
+
+    /// <summary>Pausar ett aktivt spel (status → Waiting).</summary>
+    public async Task<Game?> PauseGame(Guid id)
+    {
+        var game = await db.Games.FindAsync(id);
+        if (game == null || game.Status != GameStatus.Active)
+            return null;
+
+        game.Status = GameStatus.Waiting;
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
+        return game;
+    }
+
+    /// <summary>
+    /// Ökar CurrentRound med ett steg. Kontrollerar rundbaserade vinstvillkor efter avslutad runda.
+    /// </summary>
+    public async Task<Game?> AdvanceRound(Guid id)
+    {
+        var game = await db.Games
+            .Include(g => g.Scores)
+            .FirstOrDefaultAsync(g => g.Id == id);
+        if (game is not { Status: GameStatus.Active })
+            return null;
+
+        bool isRoundBased = game.GameMode == "BestOf" ||
+                            game is
+                            {
+                                GameMode: "FirstTo",
+                                GameModeTarget: "rounds"
+                            };
+
+        if (isRoundBased && game.GameModeValue.HasValue)
+        {
+            var roundsToWin = game.GameMode == "BestOf"
+                ? (game.GameModeValue.Value / 2) + 1
+                : game.GameModeValue.Value;
+            var roundWins = scoring.CountRoundWins(game);
+            if (roundWins.Values.Any(w => w >= roundsToWin))
+                return game;
+        }
+        else if (game.MaxRounds.HasValue && game.CurrentRound >= game.MaxRounds.Value)
+        {
+            return game;
+        }
+
+        game.CurrentRound++;
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
+
+        await scoring.CheckRoundBasedWin(id);
+        return game;
+    }
+
+    /// <summary>Avslutar spelet, beräknar vinnare och notifierar gruppen.</summary>
+    public async Task<Game?> FinishGame(Guid id)
+    {
+        var game = await db.Games
+            .Include(g => g.Scores)
+            .Include(g => g.GamePlayers)
+            .Include(g => g.Teams)
+            .FirstOrDefaultAsync(g => g.Id == id);
+        if (game == null)
+            return null;
+
+        game.Status = GameStatus.Finished;
+        game.FinishedAt = DateTime.UtcNow;
+        game.WinnerId = scoring.CalculateWinnerId(game);
+
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
+        return game;
+    }
+
+    /// <summary>Återställer ett spel till Waiting. Alla poäng raderas.</summary>
+    public async Task<Game?> ResetGame(Guid id, Guid creatorSecret)
+    {
+        var game = await db.Games
+            .Include(g => g.Scores)
+            .Include(g => g.GamePlayers)
+            .Include(g => g.Teams)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (game == null || game.CreatorSecret != creatorSecret)
+            return null;
+
+        db.Scores.RemoveRange(game.Scores);
+        game.Status = GameStatus.Waiting;
+        game.CurrentRound = 1;
+        game.WinnerId = null;
+        game.FinishedAt = null;
+
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
+        return game;
+    }
+
+    /// <summary>Skapar en ny match baserad på en befintlig: samma inställningar, lag och spelare.</summary>
+    public async Task<Game?> RematchGame(Guid id, Guid creatorSecret)
+    {
+        var original = await db.Games
+            .Include(g => g.Teams)
+            .Include(g => g.GamePlayers)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (original == null || original.CreatorSecret != creatorSecret)
+            return null;
+
+        var newGame = new Game
+        {
+            Id = Guid.NewGuid(),
+            Name = original.Name,
+            LowerIsBetter = original.LowerIsBetter,
+            MaxRounds = original.MaxRounds,
+            StartingScore = original.StartingScore,
+            CreatorOnly = original.CreatorOnly,
+            ScoreIncrement = original.ScoreIncrement,
+            TeamBasedWinner = original.TeamBasedWinner,
+            GameMode = original.GameMode,
+            GameModeValue = original.GameModeValue,
+            GameModeTarget = original.GameModeTarget,
+            IsPrivate = original.IsPrivate,
+            PasswordHash = original.PasswordHash,
+            IsTemporary = original.IsTemporary,
+            ExpiresAt = original.ExpiresAt,
+            CreatedAt = DateTime.UtcNow,
+            CreatorSecret = Guid.NewGuid(),
+        };
+        db.Games.Add(newGame);
+
+        var teamMap = new Dictionary<Guid, Guid>();
+        foreach (var t in original.Teams)
+        {
+            var newTeamId = Guid.NewGuid();
+            teamMap[t.Id] = newTeamId;
+            db.Teams.Add(new Team { Id = newTeamId, GameId = newGame.Id, Name = t.Name });
+        }
+
+        foreach (var gp in original.GamePlayers)
+        {
+            db.GamePlayers.Add(new GamePlayer
+            {
+                GameId = newGame.Id,
+                PlayerId = gp.PlayerId,
+                TeamId = gp.TeamId.HasValue && teamMap.TryGetValue(gp.TeamId.Value, out var mapped)
+                    ? mapped
+                    : null,
+                JoinedAt = DateTime.UtcNow,
+            });
+        }
+
+        await db.SaveChangesAsync();
+        return newGame;
+    }
+
+    /// <summary>Tar bort alla spel vars ExpiresAt har passerat.</summary>
+    public async Task<int> RemoveExpiredGames()
+    {
+        var now = DateTime.UtcNow;
+        var expired = await db.Games
+            .Where(g => g.ExpiresAt != null && g.ExpiresAt <= now)
+            .ToListAsync();
+        db.Games.RemoveRange(expired);
+        await db.SaveChangesAsync();
+        return expired.Count;
+    }
+}
+
