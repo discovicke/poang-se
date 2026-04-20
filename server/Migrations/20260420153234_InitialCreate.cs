@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace server.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,14 +15,27 @@ namespace server.Migrations
                 name: "Games",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    LowerIsBetter = table.Column<bool>(type: "boolean", nullable: false),
-                    MaxRounds = table.Column<int>(type: "integer", nullable: true),
-                    WinnerId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    FinishedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    LowerIsBetter = table.Column<bool>(type: "bit", nullable: false),
+                    MaxRounds = table.Column<int>(type: "int", nullable: true),
+                    StartingScore = table.Column<double>(type: "float", nullable: false),
+                    WinnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FinishedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsTemporary = table.Column<bool>(type: "bit", nullable: false),
+                    CreatorSecret = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CreatorOnly = table.Column<bool>(type: "bit", nullable: false),
+                    ScoreIncrement = table.Column<double>(type: "float", nullable: false),
+                    TeamBasedWinner = table.Column<bool>(type: "bit", nullable: false),
+                    CurrentRound = table.Column<int>(type: "int", nullable: false),
+                    GameMode = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    GameModeValue = table.Column<int>(type: "int", nullable: true),
+                    GameModeTarget = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    IsPrivate = table.Column<bool>(type: "bit", nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -33,9 +46,9 @@ namespace server.Migrations
                 name: "Players",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserName = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -46,9 +59,9 @@ namespace server.Migrations
                 name: "Teams",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    GameId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    GameId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -65,10 +78,11 @@ namespace server.Migrations
                 name: "GamePlayers",
                 columns: table => new
                 {
-                    GameId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TeamId = table.Column<Guid>(type: "uuid", nullable: true),
-                    JoinedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    GameId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PlayerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    JoinedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ClaimedByConnectionId = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -90,21 +104,21 @@ namespace server.Migrations
                         column: x => x.TeamId,
                         principalTable: "Teams",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Scores",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    GameId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PlayerId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TeamId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Round = table.Column<int>(type: "integer", nullable: true),
-                    Value = table.Column<double>(type: "double precision", nullable: false),
-                    CumulativeValue = table.Column<double>(type: "double precision", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    GameId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PlayerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Round = table.Column<int>(type: "int", nullable: true),
+                    Value = table.Column<double>(type: "float", nullable: false),
+                    CumulativeValue = table.Column<double>(type: "float", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -126,7 +140,7 @@ namespace server.Migrations
                         column: x => x.TeamId,
                         principalTable: "Teams",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateIndex(

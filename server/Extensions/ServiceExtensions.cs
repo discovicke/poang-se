@@ -14,7 +14,7 @@ public static class ServiceExtensions
     /// </summary>
     public static IServiceCollection AddAppDatabase(this IServiceCollection services, string connString)
     {
-        services.AddDbContext<AppDbContext>(opt => opt.UseNpgsql(connString));
+        services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(connString));
         return services;
     }
 

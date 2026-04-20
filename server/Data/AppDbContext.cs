@@ -43,7 +43,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(gp => gp.Team)
              .WithMany(t => t.GamePlayers)
              .HasForeignKey(gp => gp.TeamId)
-             .OnDelete(DeleteBehavior.SetNull);
+             .OnDelete(DeleteBehavior.NoAction);
         });
 
         // Team tillhör ett Game
@@ -75,7 +75,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasOne(s => s.Team)
              .WithMany(t => t.Scores)
              .HasForeignKey(s => s.TeamId)
-             .OnDelete(DeleteBehavior.SetNull);
+             .OnDelete(DeleteBehavior.NoAction);
         });
     }
 }
