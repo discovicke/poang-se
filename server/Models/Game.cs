@@ -37,6 +37,12 @@ public class Game
     /// <summary>X-värdet för "Bäst av X" eller "Först till X".</summary>
     public int? GameModeValue { get; set; }
 
+    /// <summary>
+    /// Gäller bara "FirstTo": "rounds" = först till X rundvinster, "points" = först till X poäng.
+    /// För "BestOf" är målet alltid rundor.
+    /// </summary>
+    public string? GameModeTarget { get; set; }
+
     /// <summary>Om true krävs lösenord för att se spelet.</summary>
     public bool IsPrivate { get; set; } = false;
 

@@ -42,6 +42,7 @@ export interface Game {
   currentRound: number
   gameMode: string | null
   gameModeValue: number | null
+  gameModeTarget: string | null
   isTemporary: boolean
   expiresAt: string | null
   teams: Team[]

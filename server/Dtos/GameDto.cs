@@ -11,6 +11,8 @@ public class CreateGameDto
     public bool TeamBasedWinner { get; set; } = false;
     public string? GameMode { get; set; }
     public int? GameModeValue { get; set; }
+    /// <summary>"rounds" eller "points" – bara relevant för FirstTo.</summary>
+    public string? GameModeTarget { get; set; }
     public bool IsPrivate { get; set; } = false;
     public string? GamePassword { get; set; }
     public bool IsTemporary { get; set; } = false;
@@ -63,6 +65,8 @@ public class UpdateGameSettingsDto
     public bool? TeamBasedWinner { get; set; }
     public string? GameMode { get; set; }
     public int? GameModeValue { get; set; }
+    /// <summary>"rounds" eller "points" – bara relevant för FirstTo.</summary>
+    public string? GameModeTarget { get; set; }
 }
 
 public class AssignPlayerToTeamDto
