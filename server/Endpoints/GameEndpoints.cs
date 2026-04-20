@@ -140,6 +140,32 @@ public static class GameEndpointMapper
                 : Results.Ok(new { result.PlayerId, result.TeamId });
         });
 
+        app.MapPut("/api/games/{id:guid}/players/{playerId:guid}/rename", async (Guid id, Guid playerId, RenameDto dto, GameServices svc) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Name)) return Results.BadRequest("Namn saknas");
+            var ok = await svc.RenamePlayer(id, playerId, dto.Name);
+            return ok ? Results.NoContent() : Results.NotFound();
+        });
+
+        app.MapDelete("/api/games/{id:guid}/players/{playerId:guid}", async (Guid id, Guid playerId, GameServices svc) =>
+        {
+            var ok = await svc.RemovePlayerFromGame(id, playerId);
+            return ok ? Results.NoContent() : Results.NotFound();
+        });
+
+        app.MapPut("/api/games/{id:guid}/teams/{teamId:guid}/rename", async (Guid id, Guid teamId, RenameDto dto, GameServices svc) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Name)) return Results.BadRequest("Namn saknas");
+            var ok = await svc.RenameTeam(id, teamId, dto.Name);
+            return ok ? Results.NoContent() : Results.NotFound();
+        });
+
+        app.MapDelete("/api/games/{id:guid}/teams/{teamId:guid}", async (Guid id, Guid teamId, GameServices svc) =>
+        {
+            var ok = await svc.RemoveTeam(id, teamId);
+            return ok ? Results.NoContent() : Results.NotFound();
+        });
+
         app.MapPost("/api/games/{id:guid}/scores", async (Guid id, AddScoreToGameDto dto, GameServices svc) =>
         {
             var score = new Score

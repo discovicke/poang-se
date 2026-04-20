@@ -97,6 +97,34 @@ export function useGameApi(gameId: string) {
     return fetchGame()
   }
 
+  async function renamePlayer(playerId: string, name: string): Promise<Game | null> {
+    await fetch(`${base}/players/${playerId}/rename`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name}),
+    })
+    return fetchGame()
+  }
+
+  async function removePlayer(playerId: string): Promise<Game | null> {
+    await fetch(`${base}/players/${playerId}`, {method: 'DELETE'})
+    return fetchGame()
+  }
+
+  async function renameTeam(teamId: string, name: string): Promise<Game | null> {
+    await fetch(`${base}/teams/${teamId}/rename`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name}),
+    })
+    return fetchGame()
+  }
+
+  async function removeTeam(teamId: string): Promise<Game | null> {
+    await fetch(`${base}/teams/${teamId}`, {method: 'DELETE'})
+    return fetchGame()
+  }
+
   async function addScore(
     playerId: string,
     teamId: string | null,
@@ -178,6 +206,10 @@ export function useGameApi(gameId: string) {
     addTeam,
     addPlayer,
     assignTeam,
+    renamePlayer,
+    removePlayer,
+    renameTeam,
+    removeTeam,
     addScore,
     updateScore,
     startGame,

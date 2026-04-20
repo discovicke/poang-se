@@ -533,10 +533,75 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
             await FinishGame(gameId);
     }
 
-    /// <summary>
-    /// Återställer ett avslutat spel till Waiting-status med samma spelare och inställningar.
-    /// Alla poäng raderas. Bara skaparen kan utföra detta.
-    /// </summary>
+    /// <summary>Byter namn på en spelare (globalt Player-entitet).</summary>
+    public async Task<bool> RenamePlayer(Guid gameId, Guid playerId, string newName)
+    {
+        var game = await db.Games.FindAsync(gameId);
+        if (game is null || game.Status != GameStatus.Waiting) return false;
+
+        var player = await db.Players.FindAsync(playerId);
+        if (player is null) return false;
+
+        player.UserName = newName.Trim();
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
+        return true;
+    }
+
+    /// <summary>Tar bort en spelare från ett spel. Kräver att spelet är i Waiting-status.</summary>
+    public async Task<bool> RemovePlayerFromGame(Guid gameId, Guid playerId)
+    {
+        var game = await db.Games.FindAsync(gameId);
+        if (game is null || game.Status != GameStatus.Waiting) return false;
+
+        var gp = await db.GamePlayers
+            .FirstOrDefaultAsync(x => x.GameId == gameId && x.PlayerId == playerId);
+        if (gp is null) return false;
+
+        db.GamePlayers.Remove(gp);
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
+        return true;
+    }
+
+    /// <summary>Byter namn på ett lag.</summary>
+    public async Task<bool> RenameTeam(Guid gameId, Guid teamId, string newName)
+    {
+        var game = await db.Games.FindAsync(gameId);
+        if (game is null || game.Status != GameStatus.Waiting) return false;
+
+        var team = await db.Teams.FirstOrDefaultAsync(t => t.Id == teamId && t.GameId == gameId);
+        if (team is null) return false;
+
+        team.Name = newName.Trim();
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
+        return true;
+    }
+
+    /// <summary>Tar bort ett lag och friställer alla spelare som tillhörde laget.</summary>
+    public async Task<bool> RemoveTeam(Guid gameId, Guid teamId)
+    {
+        var game = await db.Games.FindAsync(gameId);
+        if (game is null || game.Status != GameStatus.Waiting) return false;
+
+        var team = await db.Teams.FirstOrDefaultAsync(t => t.Id == teamId && t.GameId == gameId);
+        if (team is null) return false;
+
+        // Friställ alla spelare från laget
+        var members = await db.GamePlayers
+            .Where(gp => gp.GameId == gameId && gp.TeamId == teamId)
+            .ToListAsync();
+        foreach (var gp in members)
+            gp.TeamId = null;
+
+        db.Teams.Remove(team);
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
+        return true;
+    }
+
+    /// <summary>Återställer ett avslutat spel till Waiting. Alla poäng raderas. Bara skaparen kan utföra detta.</summary>
     public async Task<Game?> ResetGame(Guid id, Guid creatorSecret)
     {
         var game = await db.Games

@@ -61,6 +61,26 @@ async function onAssignTeam(playerId: string, teamId: string | null) {
     game.value = g
 }
 
+async function onRenamePlayer(playerId: string, name: string) {
+  const g = await api.renamePlayer(playerId, name)
+  if (g) game.value = g
+}
+
+async function onRemovePlayer(playerId: string) {
+  const g = await api.removePlayer(playerId)
+  if (g) game.value = g
+}
+
+async function onRenameTeam(teamId: string, name: string) {
+  const g = await api.renameTeam(teamId, name)
+  if (g) game.value = g
+}
+
+async function onRemoveTeam(teamId: string) {
+  const g = await api.removeTeam(teamId)
+  if (g) game.value = g
+}
+
 async function onStart() {
   const g = await api.startGame()
   if (g)
@@ -256,6 +276,10 @@ onBeforeUnmount(async () => {
         @add-team="onAddTeam"
         @add-player="onAddPlayer"
         @assign-team="onAssignTeam"
+        @rename-player="onRenamePlayer"
+        @remove-player="onRemovePlayer"
+        @rename-team="onRenameTeam"
+        @remove-team="onRemoveTeam"
         @start="onStart"
         @share="shareLink"
       />

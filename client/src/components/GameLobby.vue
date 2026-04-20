@@ -10,8 +10,12 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'save', settings: Record<string, unknown>): void
   (e: 'addTeam', name: string): void
+  (e: 'renameTeam', teamId: string, name: string): void
+  (e: 'removeTeam', teamId: string): void
   (e: 'addPlayer', name: string, teamId: string | null): void
   (e: 'assignTeam', playerId: string, teamId: string | null): void
+  (e: 'renamePlayer', playerId: string, name: string): void
+  (e: 'removePlayer', playerId: string): void
   (e: 'start'): void
   (e: 'share'): void
 }>()
@@ -55,6 +59,32 @@ function emitSave() {
 const newTeamName = ref('')
 const newPlayerName = ref('')
 const selectedTeamId = ref<string | null>(null)
+
+// Inline-redigering
+const editingTeamId = ref<string | null>(null)
+const editingTeamName = ref('')
+const editingPlayerId = ref<string | null>(null)
+const editingPlayerName = ref('')
+
+function startEditTeam(id: string, name: string) {
+  editingTeamId.value = id
+  editingTeamName.value = name
+}
+function confirmEditTeam(id: string) {
+  if (editingTeamName.value.trim())
+    emit('renameTeam', id, editingTeamName.value.trim())
+  editingTeamId.value = null
+}
+
+function startEditPlayer(id: string, name: string) {
+  editingPlayerId.value = id
+  editingPlayerName.value = name
+}
+function confirmEditPlayer(id: string) {
+  if (editingPlayerName.value.trim())
+    emit('renamePlayer', id, editingPlayerName.value.trim())
+  editingPlayerId.value = null
+}
 
 function submitTeam() {
   if (!newTeamName.value.trim()) return
@@ -154,7 +184,21 @@ function isPlayerClaimed(p: { claimedByConnectionId: string | null }): boolean {
   <div class="card">
     <h2>Lag</h2>
     <ul v-if="game.teams.length" class="player-list">
-      <li v-for="t in game.teams" :key="t.id">{{ t.name }}</li>
+      <li v-for="t in game.teams" :key="t.id" class="editable-row">
+        <template v-if="isCreator && editingTeamId === t.id">
+          <input v-model="editingTeamName" @keyup.enter="confirmEditTeam(t.id)"
+                 @keyup.escape="editingTeamId = null" autofocus class="inline-input"/>
+          <button class="btn-sm btn-primary" @click="confirmEditTeam(t.id)">✓</button>
+          <button class="btn-sm btn-secondary" @click="editingTeamId = null">✗</button>
+        </template>
+        <template v-else>
+          <span>{{ t.name }}</span>
+          <span v-if="isCreator" class="row-actions">
+            <button class="btn-sm btn-secondary" @click="startEditTeam(t.id, t.name)">✎</button>
+            <button class="btn-sm btn-danger" @click="emit('removeTeam', t.id)">🗑</button>
+          </span>
+        </template>
+      </li>
     </ul>
     <p v-else class="empty">Inga lag (individuellt spel)</p>
     <form v-if="isCreator" @submit.prevent="submitTeam" class="form-row" style="margin-top: 10px;">
@@ -172,11 +216,24 @@ function isPlayerClaimed(p: { claimedByConnectionId: string | null }): boolean {
         <th>Namn</th>
         <th>Lag</th>
         <th>Status</th>
+        <th v-if="isCreator"></th>
       </tr>
       </thead>
       <tbody>
       <tr v-for="p in game.players" :key="p.playerId">
-        <td>{{ p.playerName }}</td>
+        <td>
+          <template v-if="isCreator && editingPlayerId === p.playerId">
+            <input v-model="editingPlayerName" @keyup.enter="confirmEditPlayer(p.playerId)"
+                   @keyup.escape="editingPlayerId = null" autofocus class="inline-input"/>
+            <button class="btn-sm btn-primary" @click="confirmEditPlayer(p.playerId)">✓</button>
+            <button class="btn-sm btn-secondary" @click="editingPlayerId = null">✗</button>
+          </template>
+          <template v-else>
+            {{ p.playerName }}
+            <button v-if="isCreator" class="btn-sm btn-secondary"
+                    @click="startEditPlayer(p.playerId, p.playerName)">✎</button>
+          </template>
+        </td>
         <td>
           <select v-if="isCreator && game.teams.length" :value="p.teamId"
                   @change="emit('assignTeam', p.playerId, ($event.target as HTMLSelectElement).value || null)">
@@ -188,6 +245,9 @@ function isPlayerClaimed(p: { claimedByConnectionId: string | null }): boolean {
         <td>
           <span v-if="isPlayerClaimed(p)" class="badge badge-active">Ansluten</span>
           <span v-else class="badge badge-waiting">Väntar</span>
+        </td>
+        <td v-if="isCreator">
+          <button class="btn-sm btn-danger" @click="emit('removePlayer', p.playerId)">🗑</button>
         </td>
       </tr>
       </tbody>

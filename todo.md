@@ -33,7 +33,7 @@
 - [X] 404-sida om matchId inte finns
 - [x] Poängtabell för alla spelare
 - [x] Redigerbara poängvärden
-- [ ] Spelarredigering (om ej låst): namnbyte + lägg till ny spelare
+- [X] Spelarredigering/lagredigering (om ej låst match, dvs under tiden spelet är Waiting): namnbyte + lägg till ny spelare
 - [X] Knapp: Starta om match (återställer till originalvärden med samma spelare och lobbyinställningar på samma url)
 - [X] Knapp: Skapa ny match utifrån avslutad match (ny URL, samma spelare + inställningar)
 

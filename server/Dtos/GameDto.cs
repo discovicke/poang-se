@@ -74,3 +74,9 @@ public class AssignPlayerToTeamDto
     public Guid PlayerId { get; set; }
     public Guid? TeamId { get; set; }
 }
+
+public class RenameDto
+{
+    public string Name { get; set; } = "";
+}
+
