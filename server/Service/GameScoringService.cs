@@ -28,8 +28,12 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
         await hub.Clients.Group(score.GameId.ToString())
             .SendAsync("ScoreAdded", new
             {
-                score.Id, score.PlayerId, score.Round,
-                score.Value, score.CumulativeValue, score.CreatedAt
+                score.Id,
+                score.PlayerId,
+                score.Round,
+                score.Value,
+                score.CumulativeValue,
+                score.CreatedAt
             });
 
         await CheckFirstToWin(score.GameId);
@@ -207,5 +211,44 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
         await db.SaveChangesAsync();
         await hub.Clients.Group(game.Id.ToString()).SendAsync("GameUpdated");
     }
+
+    public object BuildScoreChartData(Game game)
+    {
+        var playerScores = game.Scores
+        .GroupBy(s => s.Player.UserName)
+        .Select(g => new
+        {
+            PlayerName = g.Key,
+            Scores = g.OrderBy(s => s.Round)
+            .Select(s => s.Value)
+            .ToList(),
+            CumulativeScores =
+            g.OrderBy(s => s.Round)
+            .Select(s => s.CumulativeValue)
+        })
+            .ToList();
+
+        var datasets = playerScores.Select((player, index) => new
+        {
+            label = player.PlayerName,
+            data = player.CumulativeScores,
+            fill = false,
+            borderColor = $"hsl({index * 360 / playerScores.Count()}, 70%, 50%)",
+            tension = 0.1
+        }).ToList();
+
+        var labels = Enumerable
+        .Range(1, game.CurrentRound)
+        .Select(r => $"Runda {r}")
+        .ToList();
+
+        return new
+        {
+            labels,
+            datasets,
+        };
+    }
+
+
 }
 
