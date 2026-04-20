@@ -20,7 +20,7 @@ public class Connection
 
     public override string ToString()
     {
-        return new SqlConnectionStringBuilder
+        var cs = new SqlConnectionStringBuilder
         {
             DataSource = Port != 1433 ? $"{Host},{Port}" : Host,
             InitialCatalog = Database,
@@ -28,5 +28,7 @@ public class Connection
             Password = Password,
             TrustServerCertificate = true
         }.ToString();
+        Console.WriteLine($"ConnectionString: {cs}");
+        return cs;
     }
 }

@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 var envPath = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", ".env"));
 Env.Load(envPath);
 
-var connString = new Connection().ToString();
+var connString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "";
 
 builder.Services
     .AddAppDatabase(connString)
