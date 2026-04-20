@@ -40,12 +40,13 @@
 #### Övrigt
 - [x] Ingen inloggning krävs för att använda appen
 - [x] "Starta spel" borde vara disabled på riktigt när inte kraven är uppfyllda. T.ex. ljusgrå istället för med färg.
-- [ ] Ta en funderare på hur vi ska tackla problemet med spel man räknar baklänges, t.ex. 501 i dart. Jag tänkte snett och slog ihop det med "Lägst vinner"-metoden nu vilket är fel. De borde vara separerade! **/Viktor**
+- [X] Ta en funderare på hur vi ska tackla problemet med spel man räknar baklänges, t.ex. 501 i dart. Jag tänkte snett och slog ihop det med "Lägst vinner"-metoden nu vilket är fel. De borde vara separerade! **/Viktor**
 - [X] Claim blir åskådare om det inte finns färdiga användare innan länk delas.
   - [X] Möjlighet att byta roll från åskådare till spelare måste implementeras
   - [X] Man borde inte bli satt till åskådare om man inte klickat på den knappen, nu sker det automagiskt.
-- [ ] Knapp för att ta sig tillbaka till startsidan i header (?)
+- [X] Knapp för att ta sig tillbaka till startsidan i header (?)
 - [ ] Vad ska egentligen gå att ställa in från startsidan och vad ska ställas in i matchlobbyn?
+- [ ] Fler sätt att redigera poäng (ex. -5, +5, -10 +10), just nu ställer vi in en poänginkrement som är fast. Kanske att man kan klicka och skriva in poängen direkt i poängfältet också?
 ---
 
 ### Skrytpoäng
