@@ -65,3 +65,14 @@ export interface ScoreboardRow {
   displayTotal: number
 }
 
+export interface ScoreChartData {
+  labels: string[]
+  datasets: Array<{
+    label: string
+    data: number[]
+    borderColor: string
+    fill: boolean
+    tension: number
+  }>
+}
+

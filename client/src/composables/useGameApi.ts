@@ -1,5 +1,5 @@
-﻿import {ref} from 'vue'
-import type {Game} from '../types/game'
+﻿import { ref } from 'vue'
+import type { Game, ScoreChartData } from '../types/game'
 
 /**
  * Composable som wrappar alla REST API anrop för en specifik match.
@@ -15,11 +15,11 @@ export function useGameApi(gameId: string) {
 
   function authHeaders(): HeadersInit {
     const token = localStorage.getItem(`gameToken:${gameId}`)
-    return token ? {Authorization: `Bearer ${token}`} : {}
+    return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
   async function fetchGame(): Promise<Game | null> {
-    const res = await fetch(base, {headers: authHeaders()})
+    const res = await fetch(base, { headers: authHeaders() })
     if (res.status === 403) {
       const body = await res.json().catch(() => ({}))
       if (body.isPrivate) {
@@ -38,12 +38,12 @@ export function useGameApi(gameId: string) {
   async function unlockGame(password: string): Promise<boolean> {
     const res = await fetch(`${base}/unlock`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({password}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
     })
     if (!res.ok)
       return false
-    const {token} = await res.json()
+    const { token } = await res.json()
     localStorage.setItem(`gameToken:${gameId}`, token)
     isLocked.value = false
     return true
@@ -64,7 +64,7 @@ export function useGameApi(gameId: string) {
   ): Promise<Game | null> {
     await fetch(`${base}/settings`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json', 'X-Creator-Secret': secret},
+      headers: { 'Content-Type': 'application/json', 'X-Creator-Secret': secret },
       body: JSON.stringify(settings),
     })
     return fetchGame()
@@ -73,8 +73,8 @@ export function useGameApi(gameId: string) {
   async function addTeam(name: string): Promise<Game | null> {
     await fetch(`${base}/teams`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
     })
     return fetchGame()
   }
@@ -82,8 +82,8 @@ export function useGameApi(gameId: string) {
   async function addPlayer(userName: string, teamId: string | null): Promise<Game | null> {
     await fetch(`${base}/players/new`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({userName, teamId: teamId || null}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userName, teamId: teamId || null }),
     })
     return fetchGame()
   }
@@ -91,8 +91,8 @@ export function useGameApi(gameId: string) {
   async function assignTeam(playerId: string, teamId: string | null): Promise<Game | null> {
     await fetch(`${base}/players/team`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({playerId, teamId}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId, teamId }),
     })
     return fetchGame()
   }
@@ -100,28 +100,28 @@ export function useGameApi(gameId: string) {
   async function renamePlayer(playerId: string, name: string): Promise<Game | null> {
     await fetch(`${base}/players/${playerId}/rename`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
     })
     return fetchGame()
   }
 
   async function removePlayer(playerId: string): Promise<Game | null> {
-    await fetch(`${base}/players/${playerId}`, {method: 'DELETE'})
+    await fetch(`${base}/players/${playerId}`, { method: 'DELETE' })
     return fetchGame()
   }
 
   async function renameTeam(teamId: string, name: string): Promise<Game | null> {
     await fetch(`${base}/teams/${teamId}/rename`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({name}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
     })
     return fetchGame()
   }
 
   async function removeTeam(teamId: string): Promise<Game | null> {
-    await fetch(`${base}/teams/${teamId}`, {method: 'DELETE'})
+    await fetch(`${base}/teams/${teamId}`, { method: 'DELETE' })
     return fetchGame()
   }
 
@@ -133,8 +133,8 @@ export function useGameApi(gameId: string) {
   ): Promise<Game | null> {
     await fetch(`${base}/scores`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({playerId, teamId, round, value}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId, teamId, round, value }),
     })
     return fetchGame()
   }
@@ -146,29 +146,34 @@ export function useGameApi(gameId: string) {
   ): Promise<Game | null> {
     await fetch(`${base}/scores`, {
       method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({playerId, round, value}),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playerId, round, value }),
     })
     return fetchGame()
   }
 
+  async function drawScoreChart(params: { gameId: string }): Promise<ScoreChartData | null> {
+    const res = await fetch(`/api/games/${params.gameId}/score-chart-data`)
+    return await res.json()
+  }
+
   async function startGame(): Promise<Game | null> {
-    await fetch(`${base}/start`, {method: 'PUT'})
+    await fetch(`${base}/start`, { method: 'PUT' })
     return fetchGame()
   }
 
   async function pauseGame(): Promise<Game | null> {
-    await fetch(`${base}/pause`, {method: 'PUT'})
+    await fetch(`${base}/pause`, { method: 'PUT' })
     return fetchGame()
   }
 
   async function finishGame(): Promise<Game | null> {
-    await fetch(`${base}/finish`, {method: 'PUT'})
+    await fetch(`${base}/finish`, { method: 'PUT' })
     return fetchGame()
   }
 
   async function advanceRound(): Promise<Game | null> {
-    await fetch(`${base}/advance-round`, {method: 'PUT'})
+    await fetch(`${base}/advance-round`, { method: 'PUT' })
     return fetchGame()
   }
 
@@ -178,7 +183,7 @@ export function useGameApi(gameId: string) {
     if (!secret) return null
     await fetch(`${base}/reset`, {
       method: 'PUT',
-      headers: {'X-Creator-Secret': secret},
+      headers: { 'X-Creator-Secret': secret },
     })
     return fetchGame()
   }
@@ -189,7 +194,7 @@ export function useGameApi(gameId: string) {
     if (!secret) return null
     const res = await fetch(`${base}/rematch`, {
       method: 'POST',
-      headers: {'X-Creator-Secret': secret},
+      headers: { 'X-Creator-Secret': secret },
     })
     if (!res.ok) return null
     const data = await res.json()
@@ -218,6 +223,7 @@ export function useGameApi(gameId: string) {
     advanceRound,
     resetGame,
     rematch,
+    drawScoreChart,
   }
 }
 
