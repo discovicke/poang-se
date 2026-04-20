@@ -101,9 +101,8 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
                 score.CreatedAt
             });
 
-        // Kolla om "Först till X" eller "Bäst av X" är uppnått
+        // Kolla om "Först till X" är uppnått (BestOf avgörs bara vid rundavslut)
         await CheckFirstToWin(score.GameId);
-        await CheckBestOfWin(score.GameId);
 
         return score;
     }
@@ -143,9 +142,8 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         await hub.Clients.Group(gameId.ToString())
             .SendAsync("GameUpdated");
 
-        // Kolla om "Först till X" eller "Bäst av X" är uppnått
+        // Kolla om "Först till X" är uppnått (BestOf avgörs bara vid rundavslut)
         await CheckFirstToWin(gameId);
-        await CheckBestOfWin(gameId);
 
         return target;
     }
@@ -179,6 +177,8 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
             game.GameMode = dto.GameMode;
         if (dto.GameModeValue.HasValue)
             game.GameModeValue = dto.GameModeValue.Value;
+        if (dto.GameModeTarget != null)
+            game.GameModeTarget = dto.GameModeTarget;
 
         await db.SaveChangesAsync();
         await hub.Clients.Group(gameId.ToString())
@@ -217,8 +217,9 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
     /// </summary>
     private Guid? CalculateWinnerId(Game game)
     {
-        // BestOf: vinnaren är den med flest rundvinster
-        if (game.GameMode == "BestOf")
+        // BestOf och FirstTo-rounds: vinnaren är den med flest rundvinster
+        if (game.GameMode == "BestOf" ||
+            (game.GameMode == "FirstTo" && game.GameModeTarget == "rounds"))
         {
             var roundWins = CountRoundWins(game);
             if (!roundWins.Any())
@@ -358,19 +359,23 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         if (game is not { Status: GameStatus.Active })
             return null;
 
-        // För "Bäst av X": tillåt extra rundor vid oavgjort tills en vinnare koras
-        if (game.GameMode == "BestOf" && game.GameModeValue.HasValue)
+        // Rundbaserade lägen: tillåt alltid fler rundor tills en vinnare finns
+        bool isRoundBased = game.GameMode == "BestOf" ||
+                            (game.GameMode == "FirstTo" && game.GameModeTarget == "rounds");
+
+        if (isRoundBased && game.GameModeValue.HasValue)
         {
-            var roundsToWin = (game.GameModeValue.Value / 2) + 1;
+            var roundsToWin = game.GameMode == "BestOf"
+                ? (game.GameModeValue.Value / 2) + 1
+                : game.GameModeValue.Value;
             var roundWins = CountRoundWins(game);
-            // Blockera bara om någon redan vunnit tillräckligt många rundor
             if (roundWins.Values.Any(w => w >= roundsToWin))
-                return game; // vinnare finns, inga fler rundor
-            // Annars tillåt alltid att gå vidare
+                return game; // vinnare finns redan, inga fler rundor
+            // Annars tillåt alltid att gå vidare (dynamiska extrarundor vid oavgjort)
         }
         else if (game.MaxRounds.HasValue && game.CurrentRound >= game.MaxRounds.Value)
         {
-            return game; // redan på sista rundan
+            return game; // standard max-rundor
         }
 
         game.CurrentRound++;
@@ -378,8 +383,8 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         await hub.Clients.Group(id.ToString())
             .SendAsync("GameUpdated");
 
-        // Kolla "Bäst av X" efter varje runda
-        await CheckBestOfWin(id);
+        // Kolla rundbaserade vinstvillkor efter varje avslutad runda
+        await CheckRoundBasedWin(id);
 
         return game;
     }
@@ -460,7 +465,8 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
     }
 
     /// <summary>
-    /// Kontrollera "Först till X" – om någon spelare/lag nått GameModeValue avslutas spelet.
+    /// Kontrollerar "Först till X poäng" – avsluta spelet om en spelare/ett lag nått målet.
+    /// Körs vid varje poängändring. Rundbaserad FirstTo hanteras i CheckRoundBasedWin.
     /// </summary>
     private async Task CheckFirstToWin(Guid gameId)
     {
@@ -470,6 +476,9 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         if (game is not { Status: GameStatus.Active })
             return;
         if (game.GameMode != "FirstTo" || !game.GameModeValue.HasValue)
+            return;
+        // Rundbaserad FirstTo avgörs vid rundavslut, inte per poäng
+        if (game.GameModeTarget == "rounds")
             return;
 
         var target = game.GameModeValue.Value;
@@ -496,10 +505,11 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
     }
 
     /// <summary>
-    /// Kontrollera "Bäst av X" – om någon spelare/lag vunnit tillräckligt många rundor avslutas spelet.
-    /// Stödjer oavgjorda rundor (ingen poäng delas ut) och fortsätter tills en vinnare koras.
+    /// Kontrollerar rundbaserade vinst-villkor vid rundavslut:
+    /// "Bäst av X" (roundsToWin = X/2+1) och "Först till X rundor" (roundsToWin = X).
+    /// Oavgjorda rundor räknas inte – spelet fortsätter tills en vinnare finns.
     /// </summary>
-    private async Task CheckBestOfWin(Guid gameId)
+    private async Task CheckRoundBasedWin(Guid gameId)
     {
         var game = await db.Games
             .Include(g => g.Scores)
@@ -507,17 +517,22 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
             .FirstOrDefaultAsync(g => g.Id == gameId);
         if (game is not { Status: GameStatus.Active })
             return;
-        if (game.GameMode != "BestOf" || !game.GameModeValue.HasValue)
+        if (!game.GameModeValue.HasValue)
             return;
 
-        var bestOf = game.GameModeValue.Value;
-        var roundsToWin = (bestOf / 2) + 1;
+        int roundsToWin;
+        if (game.GameMode == "BestOf")
+            roundsToWin = (game.GameModeValue.Value / 2) + 1;
+        else if (game.GameMode == "FirstTo" && game.GameModeTarget == "rounds")
+            roundsToWin = game.GameModeValue.Value;
+        else
+            return;
 
         var roundWins = CountRoundWins(game);
-
         if (roundWins.Values.Any(w => w >= roundsToWin))
             await FinishGame(gameId);
     }
+
     public async Task<int> RemoveExpiredGames()
     {
         var now = DateTime.UtcNow;

@@ -24,6 +24,7 @@ const lobbyCreatorOnly = ref(props.game.creatorOnly)
 const lobbyTeamBasedWinner = ref(props.game.teamBasedWinner)
 const lobbyGameMode = ref<string | null>(props.game.gameMode)
 const lobbyGameModeValue = ref<number | null>(props.game.gameModeValue)
+const lobbyGameModeTarget = ref<string>(props.game.gameModeTarget ?? 'points')
 
 // Synkar när parent game ändras (t.ex. efter en server round-trip)
 watch(() => props.game, (g) => {
@@ -34,6 +35,7 @@ watch(() => props.game, (g) => {
   lobbyTeamBasedWinner.value = g.teamBasedWinner
   lobbyGameMode.value = g.gameMode
   lobbyGameModeValue.value = g.gameModeValue
+  lobbyGameModeTarget.value = g.gameModeTarget ?? 'points'
 }, {deep: true})
 
 function emitSave() {
@@ -45,6 +47,7 @@ function emitSave() {
     teamBasedWinner: lobbyTeamBasedWinner.value,
     gameMode: lobbyGameMode.value,
     gameModeValue: lobbyGameModeValue.value,
+    gameModeTarget: lobbyGameModeTarget.value,
   })
 }
 
@@ -77,7 +80,7 @@ function isPlayerClaimed(p: { claimedByConnectionId: string | null }): boolean {
     <h2>⚙ Spelinställningar</h2>
     <div class="lobby-settings">
       <div class="form-row">
-        <div class="label">
+        <div v-if="!lobbyGameMode" class="label">
           Max rundor
           <input type="number" v-model.number="lobbyMaxRounds" min="1" @change="emitSave"/>
         </div>
@@ -101,14 +104,48 @@ function isPlayerClaimed(p: { claimedByConnectionId: string | null }): boolean {
             <option value="FirstTo">Först till X</option>
           </select>
         </div>
-        <div v-if="lobbyGameMode" class="label">
-          {{
-            lobbyGameMode === 'BestOf'
-              ? 'Antal rundor'
-              : 'Poängmål'
-          }}
-          <input type="number" v-model.number="lobbyGameModeValue" min="1" @change="emitSave"/>
+
+        <!-- Bäst av X: bara ett heltalsvärde -->
+        <div v-if="lobbyGameMode === 'BestOf'" class="label">
+          Antal matcher (X)
+          <input type="number" v-model.number="lobbyGameModeValue" min="1" step="2" @change="emitSave"
+                 placeholder="t.ex. 3"/>
+          <small>Vinner {{ lobbyGameModeValue ? Math.floor(lobbyGameModeValue / 2) + 1 : '?' }} rundor</small>
         </div>
+
+        <!-- Först till X: välj poäng eller rundor + värde -->
+        <template v-if="lobbyGameMode === 'FirstTo'">
+          <div class="label">
+            Mål
+            <div class="toggle-group">
+              <button type="button"
+                      :class="lobbyGameModeTarget === 'points'
+                      ? 'btn-primary'
+                      : 'btn-secondary'"
+                      @click="lobbyGameModeTarget = 'points'; emitSave()">
+                Poäng
+              </button>
+              <button type="button"
+                      :class="lobbyGameModeTarget === 'rounds'
+                      ? 'btn-primary'
+                      : 'btn-secondary'"
+                      @click="lobbyGameModeTarget = 'rounds'; emitSave()">
+                Rundor
+              </button>
+            </div>
+          </div>
+          <div class="label">
+            {{
+              lobbyGameModeTarget === 'rounds'
+                ? 'Vinna X rundor'
+                : 'Nå X poäng'
+            }}
+            <input type="number" v-model.number="lobbyGameModeValue" min="1" @change="emitSave"
+                   :placeholder="lobbyGameModeTarget === 'rounds'
+                   ? 't.ex. 3'
+                   : 't.ex. 21'"/>
+          </div>
+        </template>
       </div>
     </div>
   </div>

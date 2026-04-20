@@ -41,6 +41,7 @@ public static class GameMapper
         game.CurrentRound,
         game.GameMode,
         game.GameModeValue,
+        game.GameModeTarget,
         game.StartingScore,
         game.IsPrivate,
         game.IsTemporary,

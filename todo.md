@@ -44,6 +44,7 @@
 - [X] Claim blir åskådare om det inte finns färdiga användare innan länk delas.
   - [X] Möjlighet att byta roll från åskådare till spelare måste implementeras
   - [X] Man borde inte bli satt till åskådare om man inte klickat på den knappen, nu sker det automagiskt.
+- [ ] Knapp för att ta sig tillbaka till startsidan i header (?)
 ---
 
 ### Skrytpoäng

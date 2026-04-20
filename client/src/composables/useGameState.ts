@@ -27,10 +27,14 @@ export function useGameState(game: Ref<Game | null>, gameId: string) {
   /** Delbart URL för detta spelet. */
   const shareUrl = computed(() => `${window.location.origin}/games/${gameId}`)
 
-  /** Array av rundnummer [1..maxRounds]. */
+  /** Array av rundnummer. Rundbaserade lägen: [1..currentRound] (dynamiskt). Annars: [1..maxRounds]. */
   const rounds = computed(() => {
     if (!game.value) return []
-    const max = game.value.maxRounds ?? 1
+    const isRoundBased = game.value.gameMode === 'BestOf' ||
+      (game.value.gameMode === 'FirstTo' && game.value.gameModeTarget === 'rounds')
+    const max = isRoundBased
+      ? game.value.currentRound
+      : (game.value.maxRounds ?? 1)
     return Array.from({length: max}, (_, i) => i + 1)
   })
 
