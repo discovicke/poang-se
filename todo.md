@@ -34,8 +34,8 @@
 - [x] Poängtabell för alla spelare
 - [x] Redigerbara poängvärden
 - [ ] Spelarredigering (om ej låst): namnbyte + lägg till ny spelare
-- [ ] Knapp: Starta om match (återställer till originalvärden)
-- [ ] Knapp: Skapa ny match utifrån denna (ny URL, samma spelare + inställningar)
+- [X] Knapp: Starta om match (återställer till originalvärden med samma spelare och lobbyinställningar på samma url)
+- [X] Knapp: Skapa ny match utifrån avslutad match (ny URL, samma spelare + inställningar)
 
 #### Övrigt
 - [x] Ingen inloggning krävs för att använda appen
@@ -45,6 +45,7 @@
   - [X] Möjlighet att byta roll från åskådare till spelare måste implementeras
   - [X] Man borde inte bli satt till åskådare om man inte klickat på den knappen, nu sker det automagiskt.
 - [ ] Knapp för att ta sig tillbaka till startsidan i header (?)
+- [ ] Vad ska egentligen gå att ställa in från startsidan och vad ska ställas in i matchlobbyn?
 ---
 
 ### Skrytpoäng

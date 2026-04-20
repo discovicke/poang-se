@@ -533,8 +533,97 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
             await FinishGame(gameId);
     }
 
-    public async Task<int> RemoveExpiredGames()
+    /// <summary>
+    /// Återställer ett avslutat spel till Waiting-status med samma spelare och inställningar.
+    /// Alla poäng raderas. Bara skaparen kan utföra detta.
+    /// </summary>
+    public async Task<Game?> ResetGame(Guid id, Guid creatorSecret)
     {
+        var game = await db.Games
+            .Include(g => g.Scores)
+            .Include(g => g.GamePlayers)
+            .Include(g => g.Teams)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (game == null || game.CreatorSecret != creatorSecret)
+            return null;
+
+        db.Scores.RemoveRange(game.Scores);
+
+        game.Status = GameStatus.Waiting;
+        game.CurrentRound = 1;
+        game.WinnerId = null;
+        game.FinishedAt = null;
+
+        await db.SaveChangesAsync();
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
+        return game;
+    }
+
+    /// <summary>
+    /// Skapar en ny match baserad på ett avslutat spel: samma inställningar, lag och spelare
+    /// men ny URL och nytt creatorSecret. Bara skaparen av det ursprungliga spelet kan göra detta.
+    /// </summary>
+    public async Task<Game?> RematchGame(Guid id, Guid creatorSecret)
+    {
+        var original = await db.Games
+            .Include(g => g.Teams)
+            .Include(g => g.GamePlayers)
+            .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (original == null || original.CreatorSecret != creatorSecret)
+            return null;
+
+        var newGame = new Game
+        {
+            Id = Guid.NewGuid(),
+            Name = original.Name,
+            LowerIsBetter = original.LowerIsBetter,
+            MaxRounds = original.MaxRounds,
+            StartingScore = original.StartingScore,
+            CreatorOnly = original.CreatorOnly,
+            ScoreIncrement = original.ScoreIncrement,
+            TeamBasedWinner = original.TeamBasedWinner,
+            GameMode = original.GameMode,
+            GameModeValue = original.GameModeValue,
+            GameModeTarget = original.GameModeTarget,
+            IsPrivate = original.IsPrivate,
+            PasswordHash = original.PasswordHash,
+            IsTemporary = original.IsTemporary,
+            ExpiresAt = original.ExpiresAt,
+            CreatedAt = DateTime.UtcNow,
+            CreatorSecret = Guid.NewGuid(),
+        };
+        db.Games.Add(newGame);
+
+        // Kopiera lag och bygg en gammal→ny-mappning för team-id:n
+        var teamMap = new Dictionary<Guid, Guid>();
+        foreach (var t in original.Teams)
+        {
+            var newTeamId = Guid.NewGuid();
+            teamMap[t.Id] = newTeamId;
+            db.Teams.Add(new Team { Id = newTeamId, GameId = newGame.Id, Name = t.Name });
+        }
+
+        // Kopiera spelare (återanvänd Player-entiteterna, skapa nya GamePlayer-rader)
+        foreach (var gp in original.GamePlayers)
+        {
+            db.GamePlayers.Add(new GamePlayer
+            {
+                GameId = newGame.Id,
+                PlayerId = gp.PlayerId,
+                TeamId = gp.TeamId.HasValue && teamMap.TryGetValue(gp.TeamId.Value, out var mappedTeam)
+                    ? mappedTeam
+                    : null,
+                JoinedAt = DateTime.UtcNow,
+            });
+        }
+
+        await db.SaveChangesAsync();
+        return newGame;
+    }
+
+    public async Task<int> RemoveExpiredGames()    {
         var now = DateTime.UtcNow;
         var expired = await db.Games
             .Where(g => g.ExpiresAt != null && g.ExpiresAt <= now)

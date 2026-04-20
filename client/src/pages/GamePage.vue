@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
 import type {Game} from '../types/game'
+import {useRouter} from 'vue-router'
 
 import {useGameApi} from '../composables/useGameApi'
 import {useSignalR} from '../composables/useSignalR'
@@ -15,7 +16,7 @@ import Scoreboard from '../components/Scoreboard.vue'
 import ScoreMatrix from '../components/ScoreMatrix.vue'
 
 const props = defineProps<{ id: string }>()
-
+const router = useRouter()
 /* -- Composables -- */
 const api = useGameApi(props.id)
 const hub = useSignalR(props.id)
@@ -83,6 +84,21 @@ async function onFinish() {
   const g = await api.finishGame()
   if (g)
     game.value = g
+}
+
+async function onReset() {
+  const g = await api.resetGame()
+  if (g)
+    game.value = g
+}
+
+async function onRematch() {
+  const result = await api.rematch()
+  if (!result)
+    return
+  // Spara det nya spelets creator-secret och navigera dit
+  localStorage.setItem(`creator:${result.id}`, result.creatorSecret)
+  await router.push(`/games/${result.id}`)
 }
 
 async function onAdjustScore(playerId: string, round: number, delta: number) {
@@ -281,6 +297,10 @@ onBeforeUnmount(async () => {
 
       <!-- === FINISHED === -->
       <template v-if="game.status === 'Finished'">
+        <div v-if="state.isCreator.value" class="card action-bar">
+          <button class="btn-secondary" @click="onReset">🔄 Starta om match</button>
+          <button class="btn-primary" @click="onRematch">⚡ Ny match (samma spelare)</button>
+        </div>
         <Scoreboard
           :scoreboard="state.scoreboard.value"
           :has-teams="game.teams.length > 0"

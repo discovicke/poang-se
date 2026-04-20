@@ -196,6 +196,30 @@ public static class GameEndpointMapper
                 : Results.Ok(game.ToFinishResponse());
         });
 
+        app.MapPut("/api/games/{id:guid}/reset", async (Guid id, HttpContext ctx, GameServices svc) =>
+        {
+            var secretStr = ctx.Request.Headers["X-Creator-Secret"].ToString();
+            if (!Guid.TryParse(secretStr, out var secret))
+                return Results.Unauthorized();
+
+            var game = await svc.ResetGame(id, secret);
+            return game is null
+                ? Results.NotFound()
+                : Results.Ok(game.ToDetailResponse());
+        });
+
+        app.MapPost("/api/games/{id:guid}/rematch", async (Guid id, HttpContext ctx, GameServices svc) =>
+        {
+            var secretStr = ctx.Request.Headers["X-Creator-Secret"].ToString();
+            if (!Guid.TryParse(secretStr, out var secret))
+                return Results.Unauthorized();
+
+            var newGame = await svc.RematchGame(id, secret);
+            return newGame is null
+                ? Results.NotFound()
+                : Results.Created($"/games/{newGame.Id}", newGame.ToCreatedResponse());
+        });
+
         return app;
     }
 
@@ -215,6 +239,7 @@ public static class GameEndpointMapper
         TeamBasedWinner = dto.TeamBasedWinner,
         GameMode = dto.GameMode,
         GameModeValue = dto.GameModeValue,
+        GameModeTarget = dto.GameModeTarget,
         IsPrivate = dto.IsPrivate,
         PasswordHash = dto.IsPrivate && !string.IsNullOrWhiteSpace(dto.GamePassword)
             ? GameTokenHelper.HashPassword(dto.GamePassword)

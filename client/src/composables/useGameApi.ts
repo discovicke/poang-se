@@ -59,6 +59,7 @@ export function useGameApi(gameId: string) {
       teamBasedWinner: boolean
       gameMode: string | null
       gameModeValue: number | null
+      gameModeTarget: string
     },
   ): Promise<Game | null> {
     await fetch(`${base}/settings`, {
@@ -143,6 +144,30 @@ export function useGameApi(gameId: string) {
     return fetchGame()
   }
 
+  /** Återställer matchen till Waiting med samma spelare/inställningar. Kräver creator-secret. */
+  async function resetGame(): Promise<Game | null> {
+    const secret = localStorage.getItem(`creator:${gameId}`)
+    if (!secret) return null
+    await fetch(`${base}/reset`, {
+      method: 'PUT',
+      headers: {'X-Creator-Secret': secret},
+    })
+    return fetchGame()
+  }
+
+  /** Skapar en ny match baserad på denna, med ny URL. Returnerar det nya spelets id + secret. */
+  async function rematch(): Promise<{ id: string; creatorSecret: string } | null> {
+    const secret = localStorage.getItem(`creator:${gameId}`)
+    if (!secret) return null
+    const res = await fetch(`${base}/rematch`, {
+      method: 'POST',
+      headers: {'X-Creator-Secret': secret},
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return { id: data.id, creatorSecret: data.creatorSecret }
+  }
+
   return {
     loading,
     isLocked,
@@ -159,6 +184,8 @@ export function useGameApi(gameId: string) {
     pauseGame,
     finishGame,
     advanceRound,
+    resetGame,
+    rematch,
   }
 }
 
