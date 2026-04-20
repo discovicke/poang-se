@@ -1,10 +1,13 @@
 ﻿<script setup lang="ts">
 import type {Game} from '../types/game'
+import {useRouter} from 'vue-router'
 
 defineProps<{
   game: Game
   winnerName: string | null
 }>()
+
+const router = useRouter()
 
 function statusBadge(status: string) {
   return `badge badge-${status.toLowerCase()}`
@@ -13,7 +16,10 @@ function statusBadge(status: string) {
 
 <template>
   <div>
-    <h1>{{ game.name }}</h1>
+    <div class="header-top">
+      <button class="btn-sm btn-secondary back-btn" @click="router.push('/')"><- Startsida</button>
+      <h1>{{ game.name }}</h1>
+    </div>
     <div class="game-meta">
       <span>Status: <span :class="statusBadge(game.status)">{{ game.status }}</span></span>
       <span v-if="game.startingScore">Start: <strong>{{ game.startingScore }}</strong></span>

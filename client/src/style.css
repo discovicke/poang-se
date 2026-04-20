@@ -386,6 +386,22 @@ tbody tr:hover {
 }
 
 /* Spelhuvud metadata */
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.header-top h1 {
+  margin: 0;
+}
+
+.back-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .game-meta {
   display: flex;
   gap: 16px;
