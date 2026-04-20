@@ -36,9 +36,8 @@ app.MapGameScoringEndpoints();
 app.MapGamePlayerEndpoints();
 
 app.UseCors();
+app.UseDefaultFiles();
 app.UseStaticFiles();
-
-app.MapGet("/", () => "Hello World!");
 
 app.Run();
 
