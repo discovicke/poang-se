@@ -153,7 +153,7 @@ export function useGameApi(gameId: string) {
   }
 
   async function drawScoreChart(params: { gameId: string }): Promise<ScoreChartData | null> {
-    const res = await fetch(`/api/games/${params.gameId}/score-chart-data`)
+    const res = await fetch(`/api/games/${params.gameId}/score-chart`)
     return await res.json()
   }
 
