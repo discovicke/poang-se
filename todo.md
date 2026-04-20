@@ -49,13 +49,13 @@
 ### Skrytpoäng
 - [x] Lagstöd (individuella poäng summeras per lag)
   - [x] Möjlighet att få ut vinnare baserat på lagpoäng
-  - [ ] Det fungerade inte som jag trodde och gav upp, någon får ta över här om de vill. **/Viktor**
+  - [X] Det fungerade inte som jag trodde och gav upp, någon får ta över här om de vill. **/Viktor**
 - [ ] Matchstruktur med omgångar (frames, bowling-stil osv)
-- [x] "Bäst av X" / "Först till X" poäng
-  - [ ] "Bäst av X" fungerar inte riktigt...
+- [X] "Bäst av X" / "Först till X" poäng
+  - [X] "Bäst av X" fungerar inte riktigt...
 - [ ] Turneringar / säsonger
 - [X] Tillfälliga matcher med automatisk borttagning
 - [ ] Anpassad statistik (ex. antal missade pilar)
 - [ ] Grafvy över poängutveckling
-- [ ] Lösenordsskyddad match (JWT i cookie/localstorage)
+- [X] Lösenordsskyddad match (JWT i cookie/localstorage)
 - [x] Databas för persistent lagring
