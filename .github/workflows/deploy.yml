@@ -39,5 +39,8 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Zip publish output
+        run: cd publish && zip -r ../publish.zip .
+
       - name: Deploy to Azure App Service
-        run: az webapp deploy --name pongapp-api --resource-group pongapp-rg --src-path ./publish --type zip
+        run: az webapp deploy --name pongapp-api --resource-group pongapp-rg --src-path ./publish.zip --type zip
