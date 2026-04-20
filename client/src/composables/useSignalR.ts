@@ -14,17 +14,21 @@ export function useSignalR(gameId: string) {
   const showClaimPicker = ref(false)
 
   /**
-   * Bygger och startar en SignalR-anslutning. Kan valfritt försöka claima en specifik spelare.
+   * Bygger och startar en SignalR-anslutning. Kan valfritt försöka claima en specifik spelare
+   * eller explicit ansluta som åskådare.
    * @param onGameUpdated callback som anropas när servern pushar en uppdatering
    * @param playerId valfri spelare att försöka claima vid anslutning
+   * @param asSpectator sätt till true för att explicit ansluta som åskådare
    */
   async function connect(
     onGameUpdated: () => void | Promise<void>,
     playerId?: string,
+    asSpectator?: boolean,
   ) {
     const secret = localStorage.getItem(`creator:${gameId}`) ?? ''
     let url = `/gamehub?gameId=${gameId}`
     if (playerId) url += `&playerId=${playerId}`
+    if (asSpectator) url += `&spectator=true`
     if (secret) url += `&creatorSecret=${secret}`
 
     const conn = new signalR.HubConnectionBuilder()
@@ -35,6 +39,12 @@ export function useSignalR(gameId: string) {
     conn.on('ClaimAccepted', (c: ClaimInfo) => {
       claim.value = c
       localStorage.setItem(`claim:${gameId}`, JSON.stringify(c))
+      showClaimPicker.value = false
+    })
+
+    conn.on('ClaimPending', () => {
+      // Användaren har inte valt identitet ännu: visa väljaren utan att sätta en roll
+      showClaimPicker.value = true
     })
 
     conn.on('ClaimRejected', () => {
@@ -60,17 +70,23 @@ export function useSignalR(gameId: string) {
       } catch { /* ignore */
       }
     }
-    await connect(onGameUpdated, playerId ?? undefined)
+    // playerId === null betyder explicit åskådarval
+    await connect(onGameUpdated, playerId ?? undefined, playerId === null)
   }
 
-  /** Släpper den aktuella claimen. */
+  /** Släpper den aktuella claimen. Fungerar för både spelare och åskådare. */
   async function unclaimPlayer() {
-    if (connection.value && claim.value?.playerId) {
+    if (!connection.value) return
+
+    if (claim.value?.playerId) {
+      // Spelare: frigör server-side claim
       await connection.value.invoke('UnclaimPlayer', gameId, claim.value.playerId)
-      claim.value = null
-      localStorage.removeItem(`claim:${gameId}`)
-      showClaimPicker.value = true
     }
+    // Åskådare: ingen server-side claim att frigöra, rensa bara lokalt
+
+    claim.value = null
+    localStorage.removeItem(`claim:${gameId}`)
+    showClaimPicker.value = true
   }
 
   /** Lämnar spelet och stänger anslutningen. */

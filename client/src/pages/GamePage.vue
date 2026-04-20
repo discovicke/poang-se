@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import {ref, onMounted, onBeforeUnmount} from 'vue'
+import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
 import type {Game} from '../types/game'
 
 import {useGameApi} from '../composables/useGameApi'
@@ -113,6 +113,9 @@ function canEditPlayer(playerId: string): boolean {
   return true
 }
 
+/* -- Claim switch permission: endast möjligt under Waiting-status -- */
+const canSwitchClaim = computed(() => game.value?.status === 'Waiting')
+
 /* -- Share link -- */
 async function shareLink() {
   if (navigator.share) {
@@ -163,7 +166,8 @@ async function connectHub() {
     const parsed = JSON.parse(stored)
     await hub.connect(refresh, parsed.playerId ?? undefined)
   } else {
-    hub.showClaimPicker.value = true
+    // Ingen sparad identitet: anslut utan roll. Servern skickar ClaimPending
+    // och useSignalR visar picker när det händer.
     await hub.connect(refresh)
   }
 }
@@ -219,7 +223,7 @@ onBeforeUnmount(async () => {
       <!-- Claim picker / info -->
       <ClaimPicker
         :players="game.players"
-        :can-switch-claim="state.canSwitchClaim.value"
+        :can-switch-claim="canSwitchClaim"
         :claim="hub.claim.value"
         :show-picker="hub.showClaimPicker.value"
         :connection-id="hub.connection.value?.connectionId ?? null"

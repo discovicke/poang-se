@@ -37,7 +37,12 @@ public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
         var playerIdStr = http.Request.Query["playerId"].ToString();
         if (string.IsNullOrEmpty(playerIdStr))
         {
-            await JoinAsSpectator(gameId, gameIdStr);
+            // Explicit spectator-val -> skicka ClaimAccepted, annars vänta på att användaren väljer
+            var explicitSpectator = http.Request.Query["spectator"].ToString() == "true";
+            if (explicitSpectator)
+                await JoinAsSpectator(gameId, gameIdStr);
+            else
+                await JoinAsPending(gameIdStr);
             await base.OnConnectedAsync();
             return;
         }
@@ -73,6 +78,16 @@ public class GameHub(AppDbContext db, GameServices gameSvc) : Hub
     {
         await gameSvc.UnclaimByConnection(Context.ConnectionId);
         await base.OnDisconnectedAsync(exception);
+    }
+
+    /// <summary>
+    /// Lägger till anslutningen i spelets grupp utan att tilldela en roll.
+    /// Klienten förväntas visa claim-väljaren och sedan återansluta med ett val.
+    /// </summary>
+    private async Task JoinAsPending(string gameIdStr)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameIdStr);
+        await Clients.Caller.SendAsync("ClaimPending");
     }
 
     /// <summary>

@@ -41,9 +41,9 @@
 - [x] Ingen inloggning krävs för att använda appen
 - [x] "Starta spel" borde vara disabled på riktigt när inte kraven är uppfyllda. T.ex. ljusgrå istället för med färg.
 - [ ] Ta en funderare på hur vi ska tackla problemet med spel man räknar baklänges, t.ex. 501 i dart. Jag tänkte snett och slog ihop det med "Lägst vinner"-metoden nu vilket är fel. De borde vara separerade! **/Viktor**
-- [ ] Claim blir åskådare om det inte finns färdiga användare innan länk delas.
-  - [ ] Möjlighet att byta roll från åskådare till spelare måste implementeras
-  - [ ] Man borde inte bli satt till åskådare om man inte klickat på den knappen, nu sker det automagiskt.
+- [X] Claim blir åskådare om det inte finns färdiga användare innan länk delas.
+  - [X] Möjlighet att byta roll från åskådare till spelare måste implementeras
+  - [X] Man borde inte bli satt till åskådare om man inte klickat på den knappen, nu sker det automagiskt.
 ---
 
 ### Skrytpoäng

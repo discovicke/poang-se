@@ -39,7 +39,7 @@ function isClaimedByMe(p: GamePlayer): boolean {
         {{ p.playerName }}
         <span v-if="isPlayerClaimed(p)" class="claimed-tag">✓ tagen</span>
       </button>
-      <button v-if="canSwitchClaim" class="btn-secondary" @click="emit('claim', null)">Åskådare</button>
+      <button class="btn-secondary" @click="emit('claim', null)">👁 Åskådare</button>
     </div>
   </div>
 
