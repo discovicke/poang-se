@@ -54,14 +54,14 @@ public static class GamePlayerEndpoints
             .WithTags("Spelare & Lag");
 
         app.MapPost("/api/games/{id:guid}/players/new",
-                async (Guid id, CreatePlayerForGameDto dto, GamePlayerService svc, PlayerServices playerSvc) =>
+                async (Guid id, CreatePlayerForGameDto dto, GamePlayerService svc) =>
                 {
                     if (string.IsNullOrWhiteSpace(dto.UserName))
                         return Results.BadRequest("UserName krävs");
 
                     var player = new Player
                         { Id = Guid.NewGuid(), UserName = dto.UserName.Trim(), CreatedAt = DateTime.UtcNow };
-                    await playerSvc.CreatePlayer(player);
+                    await svc.CreatePlayer(player);
 
                     var gp = new GamePlayer
                         { GameId = id, PlayerId = player.Id, TeamId = dto.TeamId, JoinedAt = DateTime.UtcNow };

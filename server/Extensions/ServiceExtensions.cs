@@ -24,8 +24,6 @@ public static class ServiceExtensions
     /// </summary>
     public static IServiceCollection AddAppServices(this IServiceCollection services)
     {
-        services.AddScoped<PlayerServices>();
-        services.AddScoped<ScoreServices>();
         services.AddScoped<GameScoringService>();
         services.AddScoped<GamePlayerService>();
         services.AddScoped<GameLifecycleService>();

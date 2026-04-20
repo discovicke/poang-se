@@ -10,6 +10,13 @@ namespace server.Service;
 /// </summary>
 public class GamePlayerService(AppDbContext db, IHubContext<GameHub> hub)
 {
+    /// <summary>Skapar en ny global Player-entitet.</summary>
+    public async Task CreatePlayer(Player player)
+    {
+        db.Players.Add(player);
+        await db.SaveChangesAsync();
+    }
+
     /// <summary>Lägger till ett lag i ett spel.</summary>
     public async Task<Team> AddTeam(Team team)
     {

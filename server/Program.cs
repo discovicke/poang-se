@@ -31,8 +31,6 @@ await InitializeDatabase(app);
 app.MapGameLifecycleEndpoints();
 app.MapGameScoringEndpoints();
 app.MapGamePlayerEndpoints();
-app.PlayerEndpoints();
-app.ScoreEndpoints();
 
 app.UseCors();
 app.UseStaticFiles();
