@@ -12,6 +12,17 @@ public static class GameScoringEndpoints
 {
     public static WebApplication MapGameScoringEndpoints(this WebApplication app)
     {
+        app.MapGet("/api/games/{id:guid}/score-chart", async (Guid id, GameLifecycleService svc, GameScoringService scoreSvc) =>
+           {
+               var game = await svc.GetGameById(id);
+               if (game is null)
+                   return Results.NotFound();
+               var chartData = scoreSvc.BuildScoreChartData(game);
+               return Results.Ok(chartData);
+           })
+           .WithSummary("Hämta data för poängdiagram")
+           .WithTags("Poäng");
+
         app.MapPost("/api/games/{id:guid}/scores", async (Guid id, AddScoreToGameDto dto, GameScoringService svc) =>
             {
                 var score = new Score
