@@ -1,5 +1,6 @@
 using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 using server.Endpoints;
 using server.Extensions;
 using server.Hubs;
@@ -15,15 +16,21 @@ builder.Services
     .AddAppDatabase(connString)
     .AddAppServices()
     .AddAppCors()
+    .AddOpenApi()
     .AddSignalR();
 
 var app = builder.Build();
+
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.MapHub<GameHub>("/gamehub");
 
 await InitializeDatabase(app);
 
-app.GameEndpoints();
+app.MapGameLifecycleEndpoints();
+app.MapGameScoringEndpoints();
+app.MapGamePlayerEndpoints();
 app.PlayerEndpoints();
 app.ScoreEndpoints();
 
