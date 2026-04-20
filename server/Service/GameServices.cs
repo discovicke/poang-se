@@ -101,8 +101,9 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
                 score.CreatedAt
             });
 
-        // Kolla om "Först till X" är uppnått
+        // Kolla om "Först till X" eller "Bäst av X" är uppnått
         await CheckFirstToWin(score.GameId);
+        await CheckBestOfWin(score.GameId);
 
         return score;
     }
@@ -142,8 +143,9 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         await hub.Clients.Group(gameId.ToString())
             .SendAsync("GameUpdated");
 
-        // Kolla om "Först till X" är uppnått
+        // Kolla om "Först till X" eller "Bäst av X" är uppnått
         await CheckFirstToWin(gameId);
+        await CheckBestOfWin(gameId);
 
         return target;
     }
@@ -210,10 +212,22 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
 
     /// <summary>
     /// Beräknar och returnerar id:t för vinnaren av <paramref name="game"/>.
+    /// För "Bäst av X" räknas rundvinster; annars summeras poäng.
     /// Stödjer både lagbaserad och individuell vinnarlogik med hänsyn till <c>LowerIsBetter</c>.
     /// </summary>
     private Guid? CalculateWinnerId(Game game)
     {
+        // BestOf: vinnaren är den med flest rundvinster
+        if (game.GameMode == "BestOf")
+        {
+            var roundWins = CountRoundWins(game);
+            if (!roundWins.Any())
+                return null;
+            return game.LowerIsBetter
+                ? roundWins.MinBy(kv => kv.Value).Key
+                : roundWins.MaxBy(kv => kv.Value).Key;
+        }
+
         if (game.TeamBasedWinner && game.Teams.Any())
         {
             var totals = game.Scores
@@ -237,6 +251,62 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
                 ? totals.MinBy(p => p.Total)?.Id
                 : totals.MaxBy(p => p.Total)?.Id;
         }
+    }
+
+    /// <summary>
+    /// Räknar antalet rundvinster per spelare (eller lag om TeamBasedWinner).
+    /// Returnerar en Dictionary med Id -> antal vunna rundor.
+    /// Rundor utan tydlig vinnare (oavgjort) räknas inte till någon.
+    /// </summary>
+    private Dictionary<Guid, int> CountRoundWins(Game game)
+    {
+        var roundWins = new Dictionary<Guid, int>();
+        var roundGroups = game.Scores.GroupBy(s => s.Round);
+
+        foreach (var rg in roundGroups)
+        {
+            if (game.TeamBasedWinner && game.Teams.Any())
+            {
+                // Summera poäng per lag för denna runda
+                var teamTotals = rg
+                    .Where(s => s.TeamId.HasValue)
+                    .GroupBy(s => s.TeamId!.Value)
+                    .Select(g => new { Id = g.Key, Total = g.Sum(s => s.Value) })
+                    .ToList();
+
+                if (!teamTotals.Any())
+                    continue;
+                var maxTotal = game.LowerIsBetter
+                    ? teamTotals.Min(t => t.Total)
+                    : teamTotals.Max(t => t.Total);
+                var winners = teamTotals.Where(t => Math.Abs(t.Total - maxTotal) < 1e-9).ToList();
+                if (winners.Count != 1)
+                    continue; // oavgjort, ingen får poäng
+                var winner = winners[0];
+                roundWins.TryAdd(winner.Id, 0);
+                roundWins[winner.Id]++;
+            }
+            else
+            {
+                var playerTotals = rg
+                    .GroupBy(s => s.PlayerId)
+                    .Select(g => new { Id = g.Key, Total = g.Sum(s => s.Value) })
+                    .ToList();
+
+                if (!playerTotals.Any()) continue;
+                var maxTotal = game.LowerIsBetter
+                    ? playerTotals.Min(p => p.Total)
+                    : playerTotals.Max(p => p.Total);
+                var winners = playerTotals.Where(p => Math.Abs(p.Total - maxTotal) < 1e-9).ToList();
+                if (winners.Count != 1)
+                    continue; // oavgjort, ingen får poäng
+                var winner = winners[0];
+                roundWins.TryAdd(winner.Id, 0);
+                roundWins[winner.Id]++;
+            }
+        }
+
+        return roundWins;
     }
 
     /// <summary>
@@ -282,12 +352,26 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
     /// </summary>
     public async Task<Game?> AdvanceRound(Guid id)
     {
-        var game = await db.Games.FindAsync(id);
+        var game = await db.Games
+            .Include(g => g.Scores)
+            .FirstOrDefaultAsync(g => g.Id == id);
         if (game is not { Status: GameStatus.Active })
             return null;
 
-        if (game.MaxRounds.HasValue && game.CurrentRound >= game.MaxRounds.Value)
+        // För "Bäst av X": tillåt extra rundor vid oavgjort tills en vinnare koras
+        if (game.GameMode == "BestOf" && game.GameModeValue.HasValue)
+        {
+            var roundsToWin = (game.GameModeValue.Value / 2) + 1;
+            var roundWins = CountRoundWins(game);
+            // Blockera bara om någon redan vunnit tillräckligt många rundor
+            if (roundWins.Values.Any(w => w >= roundsToWin))
+                return game; // vinnare finns, inga fler rundor
+            // Annars tillåt alltid att gå vidare
+        }
+        else if (game.MaxRounds.HasValue && game.CurrentRound >= game.MaxRounds.Value)
+        {
             return game; // redan på sista rundan
+        }
 
         game.CurrentRound++;
         await db.SaveChangesAsync();
@@ -412,12 +496,14 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
     }
 
     /// <summary>
-    /// Kontrollera "Bäst av X" – om någon spelat tillräckligt många rundor och vunnit majoritet.
+    /// Kontrollera "Bäst av X" – om någon spelare/lag vunnit tillräckligt många rundor avslutas spelet.
+    /// Stödjer oavgjorda rundor (ingen poäng delas ut) och fortsätter tills en vinnare koras.
     /// </summary>
     private async Task CheckBestOfWin(Guid gameId)
     {
         var game = await db.Games
             .Include(g => g.Scores)
+            .Include(g => g.Teams)
             .FirstOrDefaultAsync(g => g.Id == gameId);
         if (game is not { Status: GameStatus.Active })
             return;
@@ -427,24 +513,7 @@ public class GameServices(AppDbContext db, IHubContext<GameHub> hub)
         var bestOf = game.GameModeValue.Value;
         var roundsToWin = (bestOf / 2) + 1;
 
-        // Räkna rundvinster per spelare (vinnaren av varje runda)
-        var roundWins = new Dictionary<Guid, int>();
-        var roundGroups = game.Scores.GroupBy(s => s.Round);
-
-        foreach (var rg in roundGroups)
-        {
-            var playerTotals = rg.GroupBy(s => s.PlayerId)
-                .Select(g => new { PlayerId = g.Key, Total = g.Sum(s => s.Value) });
-
-            var winner = game.LowerIsBetter
-                ? playerTotals.MinBy(p => p.Total)
-                : playerTotals.MaxBy(p => p.Total);
-
-            if (winner == null)
-                continue;
-            roundWins.TryAdd(winner.PlayerId, 0);
-            roundWins[winner.PlayerId]++;
-        }
+        var roundWins = CountRoundWins(game);
 
         if (roundWins.Values.Any(w => w >= roundsToWin))
             await FinishGame(gameId);
