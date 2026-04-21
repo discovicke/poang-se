@@ -13,7 +13,7 @@ const props = defineProps<{
 }>()
 
 const chartData = ref<ScoreChartData | null>(null)
-const { drawScoreChart } = useGameApi(props.id || props.gameId) // Fixed possible id mismatch
+const { drawScoreChart } = useGameApi(props.gameId)
 
 onMounted(async () => {
   chartData.value = await drawScoreChart({ gameId: props.gameId })
