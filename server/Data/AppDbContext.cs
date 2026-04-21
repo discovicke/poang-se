@@ -46,6 +46,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
              .OnDelete(DeleteBehavior.NoAction);
         });
 
+        mb.Entity<Game>(e =>
+        {
+            // Säkerställ att CreatedAt och ExpiresAt alltid sparas som UTC i databasen
+            e.Property(g => g.CreatedAt)
+             .HasConversion(
+                 v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+                 v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+            e.Property(g => g.ExpiresAt)
+             .HasConversion(
+                 v => v.HasValue && v.Value.Kind == DateTimeKind.Utc ? v : (v.HasValue ? v.Value.ToUniversalTime() : null),
+                 v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : null);
+        });
         // Team tillhör ett Game
         mb.Entity<Team>(e =>
         {
