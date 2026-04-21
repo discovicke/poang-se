@@ -212,6 +212,7 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
         await hub.Clients.Group(game.Id.ToString()).SendAsync("GameUpdated");
     }
 
+    //<summary>Bygger dataobjekt för poängdiagram baserat på spelets poänghistorik.</summary>
     public object BuildScoreChartData(Game game)
     {
         var playerScores = game.Scores
@@ -230,6 +231,7 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
 
         var datasets = playerScores.Select((player, index) => new
         {
+
             label = player.PlayerName,
             data = player.CumulativeScores,
             fill = false,

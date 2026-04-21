@@ -59,6 +59,6 @@
 - [ ] Turneringar / säsonger
 - [X] Tillfälliga matcher med automatisk borttagning
 - [ ] Anpassad statistik (ex. antal missade pilar)
-- [ ] Grafvy över poängutveckling
+- [X] Grafvy över poängutveckling
 - [X] Lösenordsskyddad match (JWT i cookie/localstorage)
 - [x] Databas för persistent lagring
