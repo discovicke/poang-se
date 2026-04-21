@@ -1,4 +1,82 @@
-/* Global reset och bas-stilar */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Manrope:wght@200;300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+:root {
+  /* Bakgrunder */
+  --color-background: #0c0e11;
+  --color-surface: #0c0e11;
+  --color-surface-dim: #0c0e11;
+  --color-surface-container-lowest: #000000;
+  --color-surface-container-low: #111417;
+  --color-surface-container: #171a1d;
+  --color-surface-container-high: #1d2024;
+  --color-surface-container-highest: #23262a;
+  --color-surface-bright: #292c31;
+  --color-surface-variant: #23262a;
+
+  /* Primär (blå) */
+  --color-primary: #84adff;
+  --color-primary-container: #6c9fff;
+  --color-primary-fixed: #6c9fff;
+  --color-primary-fixed-dim: #5091ff;
+  --color-primary-dim: #0070ea;
+  --color-on-primary: #002d64;
+  --color-on-primary-fixed: #000000;
+  --color-on-primary-container: #00214e;
+  --color-on-primary-fixed-variant: #002a60;
+  --color-inverse-primary: #005bc1;
+
+  /* Sekundär (gul) */
+  --color-secondary: #ffd709;
+  --color-secondary-container: #705d00;
+  --color-secondary-fixed: #ffd709;
+  --color-secondary-fixed-dim: #efc900;
+  --color-secondary-dim: #efc900;
+  --color-on-secondary: #5b4b00;
+  --color-on-secondary-fixed: #453900;
+  --color-on-secondary-container: #fff7e6;
+  --color-on-secondary-fixed-variant: #665500;
+
+  /* Tertiär (vit/off-white) */
+  --color-tertiary: #faf9f9;
+  --color-tertiary-container: #ebebeb;
+  --color-tertiary-fixed: #ffffff;
+  --color-tertiary-fixed-dim: #f1f0f0;
+  --color-tertiary-dim: #ebebeb;
+  --color-on-tertiary: #5e5f5f;
+  --color-on-tertiary-container: #565757;
+  --color-on-tertiary-fixed: #4f5051;
+  --color-on-tertiary-fixed-variant: #6c6d6d;
+
+  /* Error (röd) */
+  --color-error: #ff716c;
+  --color-error-container: #9f0519;
+  --color-error-dim: #d7383b;
+  --color-on-error: #490006;
+  --color-on-error-container: #ffa8a3;
+
+  /* Text & outlines */
+  --color-on-surface: #f9f9fd;
+  --color-on-surface-variant: #aaabaf;
+  --color-on-background: #f9f9fd;
+  --color-outline: #747579;
+  --color-outline-variant: #46484b;
+  --color-inverse-surface: #f9f9fd;
+  --color-inverse-on-surface: #535559;
+  --color-surface-tint: #84adff;
+
+  /* Radius */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+}
+
+/* Global Reset */
 *,
 *::before,
 *::after {
@@ -8,509 +86,143 @@
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: #f0f2f5;
-  color: #1a1a2e;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  font-family: 'Manrope', sans-serif;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Utility Classes */
+.font-headline {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-body, .font-label {
+  font-family: 'Manrope', sans-serif;
+}
+
+.display {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: clamp(96px, 15vw, 128px);
+  line-height: 1.0;
+  letter-spacing: -0.04em;
+}
+
+.headline-lg {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: clamp(40px, 8vw, 64px);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.headline-md {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.headline-sm {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(20px, 4vw, 24px);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.body-lg {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.body-md {
+  font-size: 16px;
+  font-weight: 400;
   line-height: 1.5;
 }
 
-a {
-  color: #4361ee;
-  text-decoration: none;
+.label-lg {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-a:hover {
-  text-decoration: underline;
+.label-sm {
+  font-size: clamp(10px, 2vw, 12px);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
 }
 
-h1,
-h2,
-h3 {
-  color: #16213e;
+/* Icons */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  display: inline-block;
+  vertical-align: middle;
 }
 
-hr {
-  border: none;
-  border-top: 1px solid #d6d9e0;
-  margin: 24px 0;
+.icon-fill {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/* Layout */
-.page {
-  max-width: 780px;
-  margin: 0 auto;
-  padding: 32px 20px;
+/* Glass Effect */
+.glass-card {
+  background: rgba(35, 38, 42, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(74, 72, 75, 0.15);
+  border-radius: var(--radius-3xl);
 }
 
-/* Formulär */
-input[type="text"],
-input[type="number"],
-input:not([type]),
-select {
-  padding: 8px 12px;
-  border: 1px solid #c5c9d4;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  background: #fff;
-  transition: border-color 0.2s;
+/* Brutilist Text (404 etc) */
+.brutalist-outline {
+  -webkit-text-stroke: 2px var(--color-primary);
+  color: transparent;
 }
 
-input:focus,
-select:focus {
+/* Glow Effects */
+.glow-primary:hover {
+  box-shadow: 0 0 40px rgba(132, 173, 255, 0.2);
+}
+
+.leader-glow {
+  box-shadow: -4px 0 20px -5px var(--color-secondary);
+}
+
+.fab-glow {
+  box-shadow: 0 0 40px rgba(132, 173, 255, 0.4);
+}
+
+/* Spacing Helpers (Optional, using native CSS where possible) */
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 16px; }
+.mt-lg { margin-top: 24px; }
+.mt-xl { margin-top: 32px; }
+
+/* Transitions */
+.transition-all {
+  transition: all 200ms ease-out;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
   outline: none;
-  border-color: #4361ee;
-  box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
-}
-
-button {
-  padding: 8px 18px;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-}
-
-button:active {
-  transform: scale(0.97);
-}
-
-.btn-primary {
-  background: #4361ee;
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background: #3a56d4;
-}
-
-.btn-primary:disabled {
-  background: #a0aec0;
-  cursor: not-allowed;
-}
-
-.btn-danger {
-  background: #e63946;
-  color: #fff;
-}
-
-.btn-danger:hover {
-  background: #c5303c;
-}
-
-.btn-success {
-  background: #2ec4b6;
-  color: #fff;
-}
-
-.btn-success:disabled {
-  background: #a0aec0;
-  cursor: not-allowed;
-  opacity: 0.9;
-}
-
-.btn-success:disabled:hover {
-  background: #a0aec0;
-}
-
-.btn-copy {
-  background: #f1ee2a;
-  color: #000;
-}
-
-.btn-copy:hover {
-  background: #cdda1a;
-}
-
-.btn-success:hover {
-  background: #25a99d;
-}
-
-/* Kort / Sektioner */
-.card {
-  background: #fff;
-  border-radius: 10px;
-  padding: 20px 24px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-/* Tabeller */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-thead th {
-  text-align: left;
-  padding: 10px 8px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #6b7280;
-  border-bottom: 2px solid #e5e7eb;
-}
-
-tbody td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-tbody tr:last-child td {
-  border-bottom: none;
-}
-
-tbody tr:hover {
-  background: #f9fafb;
-}
-
-/* Poängmatris */
-.score-matrix-wrapper {
-  overflow-x: auto;
-}
-
-.score-matrix {
-  table-layout: auto;
-}
-
-.score-matrix .round-col {
-  min-width: 70px;
-  text-align: left;
-}
-
-.score-matrix .player-col {
-  min-width: 130px;
-  text-align: center;
-}
-
-.score-matrix .round-label {
-  font-weight: 600;
-  color: #16213e;
-  white-space: nowrap;
-}
-
-.score-matrix .score-cell-td {
-  padding: 6px 4px;
-  text-align: center;
-}
-
-.score-matrix tfoot td {
-  border-top: 2px solid #e5e7eb;
-  padding: 10px 8px;
-  font-weight: 700;
-  color: #4361ee;
-  text-align: center;
-}
-
-.score-matrix tfoot td:first-child {
-  color: #16213e;
-  text-align: left;
-}
-
-.score-matrix .total-val {
-  font-weight: 700;
-  text-align: center;
-  color: #4361ee;
-}
-
-.score-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #f0f4ff;
-  border-radius: 8px;
-  padding: 4px 8px;
-}
-
-.sc-btn {
-  padding: 2px 10px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  border-radius: 4px;
-  line-height: 1.2;
-}
-
-.sc-minus {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-
-.sc-minus:hover:not(:disabled) {
-  background: #fca5a5;
-}
-
-.sc-plus {
-  background: #dcfce7;
-  color: #15803d;
-}
-
-.sc-plus:hover:not(:disabled) {
-  background: #86efac;
-}
-
-.sc-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.sc-val {
-  min-width: 28px;
-  text-align: center;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.sc-val-readonly {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: #374151;
-}
-
-/* Aktiv runda markering */
-.active-round {
-  background: #eff6ff;
-}
-
-.round-badge {
-  color: #4361ee;
-  font-weight: 700;
-  margin-left: 4px;
-}
-
-/* Tags / Badges */
-.badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.badge-waiting {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.badge-active {
-  background: #d1fae5;
-  color: #065f46;
-}
-
-.badge-finished {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-/* Empty state */
-.empty {
-  color: #9ca3af;
-  font-style: italic;
-  padding: 8px 0;
-}
-
-/* Inline form row */
-.form-row {
-  display: flex;
-  gap: 10px;
-  align-items: end;
-  flex-wrap: wrap;
-}
-
-.form-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Kompakt spelarlista */
-.player-list {
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0;
-}
-
-.player-list li {
-  background: #eef2ff;
-  color: #4338ca;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 0.88rem;
-  font-weight: 500;
-}
-
-/* Misc */
-.text-right {
-  text-align: right;
-}
-
-.text-muted {
-  color: #9ca3af;
-}
-
-.text-bold {
-  font-weight: 700;
-}
-
-.winner-row {
-  font-weight: 700;
-  color: #d97706;
-}
-
-.back-link {
-  display: inline-block;
-  margin-bottom: 16px;
-  font-weight: 500;
-}
-
-.label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: #4b5563;
-}
-
-/* Vinnarbanner */
-.winner-banner {
-  padding: 14px 18px;
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  border: 1px solid #34d399;
-  border-radius: 10px;
-  margin-bottom: 20px;
-}
-
-/* Spelhuvud metadata */
-.header-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
-}
-
-.header-top h1 {
-  margin: 0;
-}
-
-.back-btn {
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.game-meta {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
-  color: #4b5563;
-}
-
-.game-meta strong {
-  color: #1a1a2e;
-}
-
-/* Status specifika färger på tabellrader */
-.games-table .status-Waiting {
-  color: #92400e;
-}
-
-.games-table .status-Active {
-  color: #065f46;
-}
-
-.games-table .status-Finished {
-  color: #3730a3;
-}
-
-/* Claim-knappar */
-.claim-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.btn-claimed {
-  background: #e5e7eb;
-  color: #6b7280;
-  cursor: default;
-}
-
-.claimed-tag {
-  font-size: 0.75rem;
-  margin-left: 4px;
-  opacity: 0.7;
-}
-
-.btn-secondary {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-.btn-secondary:hover {
-  background: #d1d5db;
-}
-
-/* Claim-info bar */
-.claim-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: #eef2ff;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 0.9rem;
-}
-
-.btn-sm {
-  padding: 4px 12px;
-  font-size: 0.8rem;
-}
-
-/* Kontrollpanel / Action bar */
-.action-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.btn-lg {
-  padding: 12px 28px;
-  font-size: 1.05rem;
-}
-
-/* Pausa-knapp */
-.btn-warning {
-  background: #f59e0b;
-  color: #fff;
-}
-
-.btn-warning:hover {
-  background: #d97706;
-}
-
-/* Runda-indikator */
-.round-indicator {
-  font-size: 1rem;
-  color: #374151;
-  padding: 6px 14px;
-  background: #f0f4ff;
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-/* Lobby-inställningar */
-.lobby-settings label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
+  ring: 2px solid var(--color-primary);
 }
