@@ -1,6 +1,6 @@
-﻿<script setup lang="ts">
-import {ref, watch} from 'vue'
-import type {Game} from '../types/game'
+<script setup lang="ts">
+import { ref, watch, computed } from 'vue'
+import type { Game } from '../types/game'
 
 const props = defineProps<{
   game: Game
@@ -10,39 +10,37 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'save', settings: Record<string, unknown>): void
   (e: 'addTeam', name: string): void
-  (e: 'renameTeam', teamId: string, name: string): void
   (e: 'removeTeam', teamId: string): void
   (e: 'addPlayer', name: string, teamId: string | null): void
   (e: 'assignTeam', playerId: string, teamId: string | null): void
-  (e: 'renamePlayer', playerId: string, name: string): void
   (e: 'removePlayer', playerId: string): void
   (e: 'start'): void
   (e: 'share'): void
 }>()
 
-/* -- Lobby inställningar (Lokal kopia för redigering) -- */
+/* -- Local State for Settings -- */
 const lobbyMaxRounds = ref<number | null>(props.game.maxRounds)
 const lobbyIncrement = ref<number>(props.game.scoreIncrement)
 const lobbyLowerIsBetter = ref(props.game.lowerIsBetter)
 const lobbyCreatorOnly = ref(props.game.creatorOnly)
-const lobbyTeamBasedWinner = ref(props.game.teamBasedWinner)
 const lobbyGameMode = ref<string | null>(props.game.gameMode)
 const lobbyGameModeValue = ref<number | null>(props.game.gameModeValue)
 const lobbyGameModeTarget = ref<string>(props.game.gameModeTarget ?? 'points')
+const lobbyStartingScore = ref<number>(props.game.startingScore)
 
-// Synkar när parent game ändras (t.ex. efter en server round-trip)
 watch(() => props.game, (g) => {
   lobbyMaxRounds.value = g.maxRounds
   lobbyIncrement.value = g.scoreIncrement
   lobbyLowerIsBetter.value = g.lowerIsBetter
   lobbyCreatorOnly.value = g.creatorOnly
-  lobbyTeamBasedWinner.value = g.teamBasedWinner
   lobbyGameMode.value = g.gameMode
   lobbyGameModeValue.value = g.gameModeValue
   lobbyGameModeTarget.value = g.gameModeTarget ?? 'points'
-}, {deep: true})
+  lobbyStartingScore.value = g.startingScore
+}, { deep: true })
 
 function emitSave() {
+  if (!props.isCreator) return
   emit('save', {
     maxRounds: lobbyMaxRounds.value,
     scoreIncrement: lobbyIncrement.value,
@@ -52,38 +50,19 @@ function emitSave() {
     gameMode: lobbyGameMode.value,
     gameModeValue: lobbyGameModeValue.value,
     gameModeTarget: lobbyGameModeTarget.value,
+    startingScore: lobbyStartingScore.value
   })
 }
 
-/* -- Form inputs -- */
-const newTeamName = ref('')
+/* -- UI State -- */
 const newPlayerName = ref('')
-const selectedTeamId = ref<string | null>(null)
+const newTeamName = ref('')
+const showTeamManager = ref(false)
 
-// Inline-redigering
-const editingTeamId = ref<string | null>(null)
-const editingTeamName = ref('')
-const editingPlayerId = ref<string | null>(null)
-const editingPlayerName = ref('')
-
-function startEditTeam(id: string, name: string) {
-  editingTeamId.value = id
-  editingTeamName.value = name
-}
-function confirmEditTeam(id: string) {
-  if (editingTeamName.value.trim())
-    emit('renameTeam', id, editingTeamName.value.trim())
-  editingTeamId.value = null
-}
-
-function startEditPlayer(id: string, name: string) {
-  editingPlayerId.value = id
-  editingPlayerName.value = name
-}
-function confirmEditPlayer(id: string) {
-  if (editingPlayerName.value.trim())
-    emit('renamePlayer', id, editingPlayerName.value.trim())
-  editingPlayerId.value = null
+function submitPlayer() {
+  if (!newPlayerName.value.trim()) return
+  emit('addPlayer', newPlayerName.value.trim(), null)
+  newPlayerName.value = ''
 }
 
 function submitTeam() {
@@ -92,185 +71,495 @@ function submitTeam() {
   newTeamName.value = ''
 }
 
-function submitPlayer() {
-  if (!newPlayerName.value.trim()) return
-  emit('addPlayer', newPlayerName.value.trim(), selectedTeamId.value)
-  newPlayerName.value = ''
-  selectedTeamId.value = null
+function randomizeTeams() {
+  if (!props.game.teams.length || !props.game.players.length) return
+  const shuffledPlayers = [...props.game.players].sort(() => Math.random() - 0.5)
+  shuffledPlayers.forEach((p, i) => {
+    const team = props.game.teams[i % props.game.teams.length]
+    emit('assignTeam', p.playerId, team.id)
+  })
 }
 
-function isPlayerClaimed(p: { claimedByConnectionId: string | null }): boolean {
-  return p.claimedByConnectionId != null
+const getPlayerColor = (index: number) => {
+  const colors = ['--color-secondary', '--color-primary', '--color-error', '--color-tertiary']
+  return colors[index % colors.length]
 }
+
+const canStart = computed(() => props.game.players.length >= 2)
 </script>
 
 <template>
-  <!-- Inställningar (spelskaparen endast) -->
-  <div v-if="isCreator" class="card">
-    <h2>⚙ Spelinställningar</h2>
-    <div class="lobby-settings">
-      <div class="form-row">
-        <div v-if="!lobbyGameMode" class="label">
-          Max rundor
-          <input type="number" v-model.number="lobbyMaxRounds" min="1" @change="emitSave"/>
-        </div>
-        <div class="label">
-          Poäng per klick
-          <input type="number" v-model.number="lobbyIncrement" min="0.1" step="any" @change="emitSave"/>
-        </div>
-      </div>
-      <div class="form-row" style="margin-top: 8px;">
-        <label><input type="checkbox" v-model="lobbyLowerIsBetter" @change="emitSave"/> Lägre = bättre</label>
-        <label><input type="checkbox" v-model="lobbyCreatorOnly" @change="emitSave"/> Bara jag redigerar poäng</label>
-        <label v-if="game.teams.length"><input type="checkbox" v-model="lobbyTeamBasedWinner" @change="emitSave"/>
-          Lagvinnare</label>
-      </div>
-      <div class="form-row" style="margin-top: 8px;">
-        <div class="label">
-          Spelläge
-          <select v-model="lobbyGameMode" @change="emitSave">
-            <option :value="null">Standard</option>
-            <option value="BestOf">Bäst av X</option>
-            <option value="FirstTo">Först till X</option>
-          </select>
-        </div>
+  <div class="lobby-grid">
+    <!-- Section 1: Rules & Settings -->
+    <section class="rules-section">
+      <div class="glass-card settings-bento">
+        <header class="section-header">
+          <h3 class="headline-sm">Matchregler</h3>
+          <span class="material-symbols-outlined text-primary">tune</span>
+        </header>
 
-        <!-- Bäst av X: bara ett heltalsvärde -->
-        <div v-if="lobbyGameMode === 'BestOf'" class="label">
-          Antal matcher (X)
-          <input type="number" v-model.number="lobbyGameModeValue" min="1" step="2" @change="emitSave"
-                 placeholder="t.ex. 3"/>
-          <small>Vinner {{ lobbyGameModeValue ? Math.floor(lobbyGameModeValue / 2) + 1 : '?' }} rundor</small>
-        </div>
-
-        <!-- Först till X: välj poäng eller rundor + värde -->
-        <template v-if="lobbyGameMode === 'FirstTo'">
-          <div class="label">
-            Mål
-            <div class="toggle-group">
-              <button type="button"
-                      :class="lobbyGameModeTarget === 'points'
-                      ? 'btn-primary'
-                      : 'btn-secondary'"
-                      @click="lobbyGameModeTarget = 'points'; emitSave()">
-                Poäng
-              </button>
-              <button type="button"
-                      :class="lobbyGameModeTarget === 'rounds'
-                      ? 'btn-primary'
-                      : 'btn-secondary'"
-                      @click="lobbyGameModeTarget = 'rounds'; emitSave()">
-                Rundor
-              </button>
+        <div class="settings-content">
+          <!-- Win Condition -->
+          <div class="setting-group">
+            <label class="label-sm">Vinstvillkor</label>
+            <div class="toggle-pills">
+              <button 
+                class="pill-btn" 
+                :class="{ active: !lobbyLowerIsBetter }"
+                @click="lobbyLowerIsBetter = false; emitSave()"
+              >HÖGA POÄNG</button>
+              <button 
+                class="pill-btn" 
+                :class="{ active: lobbyLowerIsBetter }"
+                @click="lobbyLowerIsBetter = true; emitSave()"
+              >LÅGA POÄNG</button>
             </div>
           </div>
-          <div class="label">
-            {{
-              lobbyGameModeTarget === 'rounds'
-                ? 'Vinna X rundor'
-                : 'Nå X poäng'
-            }}
-            <input type="number" v-model.number="lobbyGameModeValue" min="1" @change="emitSave"
-                   :placeholder="lobbyGameModeTarget === 'rounds'
-                   ? 't.ex. 3'
-                   : 't.ex. 21'"/>
+
+          <!-- Base Values -->
+          <div class="grid-2">
+            <div class="setting-group">
+              <label class="label-sm">Startpoäng</label>
+              <input type="number" v-model.number="lobbyStartingScore" @change="emitSave" class="primary-input" />
+            </div>
+            <div class="setting-group">
+              <label class="label-sm">Poängsteg</label>
+              <input type="number" v-model.number="lobbyIncrement" @change="emitSave" class="primary-input" />
+            </div>
           </div>
-        </template>
+
+          <!-- Game Mode -->
+          <div class="setting-group">
+            <label class="label-sm">Spelläge</label>
+            <select v-model="lobbyGameMode" @change="emitSave" class="primary-select">
+              <option :value="null">Standard (X rundor)</option>
+              <option value="BestOf">Bäst av X</option>
+              <option value="FirstTo">Först till X</option>
+            </select>
+          </div>
+
+          <div v-if="lobbyGameMode === 'FirstTo'" class="setting-group animate-slide">
+            <label class="label-sm">Måltyp</label>
+            <div class="toggle-pills">
+              <button 
+                class="pill-btn" 
+                :class="{ active: lobbyGameModeTarget === 'points' }"
+                @click="lobbyGameModeTarget = 'points'; emitSave()"
+              >POÄNG</button>
+              <button 
+                class="pill-btn" 
+                :class="{ active: lobbyGameModeTarget === 'rounds' }"
+                @click="lobbyGameModeTarget = 'rounds'; emitSave()"
+              >RUNDOR</button>
+            </div>
+          </div>
+
+          <div v-if="lobbyGameMode" class="setting-group animate-slide">
+            <label class="label-sm">
+              {{ lobbyGameMode === 'BestOf' ? 'Antal matcher (X)' : (lobbyGameModeTarget === 'rounds' ? 'Antal vinster' : 'Poängmål') }}
+            </label>
+            <input type="number" v-model.number="lobbyGameModeValue" @change="emitSave" class="primary-input" />
+          </div>
+
+          <!-- Admin Toggles -->
+          <div class="switches-list">
+             <label class="switch-item">
+               <div class="switch">
+                 <input type="checkbox" v-model="lobbyCreatorOnly" @change="emitSave">
+                 <span class="slider"></span>
+               </div>
+               <div class="switch-info">
+                 <span class="font-bold">Endast jag redigerar</span>
+                 <span class="label-xs text-on-surface-variant">Standard är att alla kan redigera sina egna</span>
+               </div>
+             </label>
+
+             <label v-if="game.teams.length > 0" class="switch-item mt-md">
+               <div class="switch">
+                 <input type="checkbox" v-model="lobbyTeamBasedWinner" @change="emitSave">
+                 <span class="slider"></span>
+               </div>
+               <div class="switch-info">
+                 <span class="font-bold">Lagvinnare</span>
+                 <span class="label-xs text-on-surface-variant">Summera poäng per lag istället för spelare</span>
+               </div>
+             </label>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <!-- Lag -->
-  <div class="card">
-    <h2>Lag</h2>
-    <ul v-if="game.teams.length" class="player-list">
-      <li v-for="t in game.teams" :key="t.id" class="editable-row">
-        <template v-if="isCreator && editingTeamId === t.id">
-          <input v-model="editingTeamName" @keyup.enter="confirmEditTeam(t.id)"
-                 @keyup.escape="editingTeamId = null" autofocus class="inline-input"/>
-          <button class="btn-sm btn-primary" @click="confirmEditTeam(t.id)">✓</button>
-          <button class="btn-sm btn-secondary" @click="editingTeamId = null">✗</button>
-        </template>
-        <template v-else>
-          <span>{{ t.name }}</span>
-          <span v-if="isCreator" class="row-actions">
-            <button class="btn-sm btn-secondary" @click="startEditTeam(t.id, t.name)">✎</button>
-            <button class="btn-sm btn-danger" @click="emit('removeTeam', t.id)">🗑</button>
-          </span>
-        </template>
-      </li>
-    </ul>
-    <p v-else class="empty">Inga lag (individuellt spel)</p>
-    <form v-if="isCreator" @submit.prevent="submitTeam" class="form-row" style="margin-top: 10px;">
-      <input v-model="newTeamName" placeholder="Lagnamn"/>
-      <button type="submit" class="btn-primary">+ Lag</button>
-    </form>
-  </div>
+    <!-- Section 2: Players & Teams -->
+    <section class="players-section">
+      <div class="glass-card players-bento">
+        <header class="section-header">
+          <div class="tabs">
+            <button class="tab-btn" :class="{ active: !showTeamManager }" @click="showTeamManager = false">Spelare</button>
+            <button class="tab-btn" :class="{ active: showTeamManager }" @click="showTeamManager = true">Lag</button>
+          </div>
+          <button v-if="showTeamManager && game.players.length > 0" @click="randomizeTeams" class="icon-btn-text">
+            <span class="material-symbols-outlined">shuffle</span> SLUMPA
+          </button>
+        </header>
 
-  <!-- Spelare -->
-  <div class="card">
-    <h2>Spelare</h2>
-    <table v-if="game.players.length">
-      <thead>
-      <tr>
-        <th>Namn</th>
-        <th>Lag</th>
-        <th>Status</th>
-        <th v-if="isCreator"></th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-for="p in game.players" :key="p.playerId">
-        <td>
-          <template v-if="isCreator && editingPlayerId === p.playerId">
-            <input v-model="editingPlayerName" @keyup.enter="confirmEditPlayer(p.playerId)"
-                   @keyup.escape="editingPlayerId = null" autofocus class="inline-input"/>
-            <button class="btn-sm btn-primary" @click="confirmEditPlayer(p.playerId)">✓</button>
-            <button class="btn-sm btn-secondary" @click="editingPlayerId = null">✗</button>
-          </template>
-          <template v-else>
-            {{ p.playerName }}
-            <button v-if="isCreator" class="btn-sm btn-secondary"
-                    @click="startEditPlayer(p.playerId, p.playerName)">✎</button>
-          </template>
-        </td>
-        <td>
-          <select v-if="isCreator && game.teams.length" :value="p.teamId"
-                  @change="emit('assignTeam', p.playerId, ($event.target as HTMLSelectElement).value || null)">
-            <option :value="''">Inget lag</option>
-            <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
-          </select>
-          <span v-else>{{ p.teamName ?? '–' }}</span>
-        </td>
-        <td>
-          <span v-if="isPlayerClaimed(p)" class="badge badge-active">Ansluten</span>
-          <span v-else class="badge badge-waiting">Väntar</span>
-        </td>
-        <td v-if="isCreator">
-          <button class="btn-sm btn-danger" @click="emit('removePlayer', p.playerId)">🗑</button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
-    <p v-else class="empty">Inga spelare ännu.</p>
+        <div class="bento-content">
+          <!-- Spelarvyn -->
+          <div v-if="!showTeamManager" class="view-container">
+            <div class="items-list scrollable">
+              <div v-for="(p, index) in game.players" :key="p.playerId" class="list-item player-item">
+                <div class="item-main">
+                  <div class="avatar" :style="{ backgroundColor: `var(${getPlayerColor(index)})` }">
+                    {{ p.playerName.charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="item-info">
+                    <span class="font-bold">{{ p.playerName }}</span>
+                    <span class="label-xs text-on-surface-variant">{{ p.teamName || 'Inget lag' }}</span>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <span v-if="p.claimedByConnectionId" class="online-dot" title="Online"></span>
+                  <button v-if="isCreator" @click="emit('removePlayer', p.playerId)" class="remove-btn">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
+                </div>
+              </div>
+              <div v-if="!game.players.length" class="empty-state">
+                <span class="material-symbols-outlined">person_add</span>
+                <p class="label-sm italic opacity-50">Inga spelare ännu...</p>
+              </div>
+            </div>
+            
+            <div v-if="isCreator" class="add-item-bar">
+              <input v-model="newPlayerName" placeholder="Spelarnamn..." class="primary-input" @keyup.enter="submitPlayer" />
+              <button @click="submitPlayer" class="add-btn"><span class="material-symbols-outlined">add</span></button>
+            </div>
+          </div>
 
-    <form @submit.prevent="submitPlayer" class="form-row" style="margin-top: 10px;">
-      <input v-model="newPlayerName" placeholder="Spelarnamn"/>
-      <select v-model="selectedTeamId" v-if="game.teams.length">
-        <option :value="null">Inget lag</option>
-        <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
-      </select>
-      <button type="submit" class="btn-primary" :disabled="!newPlayerName.trim()">+ Spelare</button>
-    </form>
-  </div>
+          <!-- Lagvyn -->
+          <div v-else class="view-container">
+            <div class="items-list scrollable">
+              <div v-for="t in game.teams" :key="t.id" class="list-item team-item">
+                <div class="item-info">
+                  <span class="font-bold">{{ t.name }}</span>
+                  <span class="label-xs text-on-surface-variant">
+                    {{ game.players.filter(p => p.teamId === t.id).length }} spelare
+                  </span>
+                </div>
+                <button v-if="isCreator" @click="emit('removeTeam', t.id)" class="remove-btn">
+                  <span class="material-symbols-outlined">delete</span>
+                </button>
+              </div>
+              <div v-if="!game.teams.length" class="empty-state">
+                <span class="material-symbols-outlined">groups</span>
+                <p class="label-sm italic opacity-50">Skapa lag först</p>
+              </div>
+            </div>
 
-  <!-- Start / Share -->
-  <div class="card action-bar">
-    <button v-if="isCreator" class="btn-success btn-lg" @click="emit('start')" :disabled="game.players.length < 2">
-      ▶ Starta spel
-    </button>
-    <span v-if="game.players.length < 2" class="text-muted">Minst 2 spelare krävs</span>
-    <button @click="emit('share')" class="btn-copy">📋 Kopiera länk</button>
+            <div v-if="isCreator" class="add-item-bar">
+              <input v-model="newTeamName" placeholder="Lagnamn..." class="primary-input" @keyup.enter="submitTeam" />
+              <button @click="submitTeam" class="add-btn"><span class="material-symbols-outlined">group_add</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="lobby-footer mt-xl">
+        <button 
+          v-if="isCreator" 
+          class="start-match-btn glow-primary" 
+          @click="emit('start')" 
+          :disabled="!canStart"
+        >
+          <span class="material-symbols-outlined">play_circle</span>
+          {{ game.currentRound > 1 ? 'FORTSÄTT MATCH' : 'STARTA MATCH' }}
+        </button>
+        <button @click="emit('share')" class="share-btn">
+          <span class="material-symbols-outlined">share</span> DELA LÄNK
+        </button>
+      </div>
+    </section>
   </div>
 </template>
 
+<style scoped>
+.lobby-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (min-width: 1024px) {
+  .lobby-grid {
+    grid-template-columns: 5fr 7fr;
+  }
+}
+
+.glass-card {
+  padding: 32px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.toggle-pills {
+  display: flex;
+  background-color: var(--color-surface-container-high);
+  padding: 4px;
+  border-radius: var(--radius-lg);
+}
+
+.pill-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.pill-btn.active {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary-fixed);
+}
+
+.primary-input, .primary-select {
+  background-color: var(--color-surface-container-high);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  color: var(--color-on-surface);
+  font-size: 16px;
+  width: 100%;
+}
+
+.switches-list {
+  border-top: 1px solid var(--color-outline-variant);
+  padding-top: 24px;
+  margin-top: 8px;
+}
+
+.switch-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.switch-info {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 24px;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--color-on-surface-variant);
+  cursor: pointer;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+  transition: all 200ms;
+}
+
+.tab-btn.active {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+/* Items List */
+.view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.items-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+  min-height: 300px;
+}
+
+.scrollable {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.list-item {
+  background-color: var(--color-surface-container-high);
+  padding: 16px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.item-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--color-on-primary-fixed);
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.online-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+.remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-outline);
+  cursor: pointer;
+}
+
+.add-item-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.add-btn {
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: 0 16px;
+  cursor: pointer;
+}
+
+/* Footer Actions */
+.lobby-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.start-match-btn {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary-fixed);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.start-match-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.share-btn {
+  background-color: transparent;
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface);
+  padding: 16px;
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0.3;
+}
+
+.empty-state span { font-size: 48px; }
+
+/* Transitions */
+.animate-slide {
+  animation: slideDown 300ms ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.icon-btn-text {
+  background: transparent;
+  border: none;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+</style>
