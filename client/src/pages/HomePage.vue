@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -42,7 +42,7 @@ async function createGame() {
   <div class="home-page">
     <div class="container">
       <header class="page-header text-center">
-        <h1 class="display text-primary mb-md">POÄNGTAVLAN</h1>
+        <h1 class="display text-primary mb-md">POÄNG.se</h1>
         <p class="body-lg text-on-surface-variant max-w-md mx-auto">
           Starta en ny match på under 30 sekunder. Inget krångel, bara poäng.
         </p>
@@ -112,7 +112,9 @@ async function createGame() {
   align-items: center;
   justify-content: center;
 }
-
+span{
+  padding-left: 10px;
+}
 .container {
   max-width: 600px;
   width: 100%;
@@ -127,6 +129,7 @@ async function createGame() {
 .primary-input {
   background-color: var(--color-surface-container-high);
   border: none;
+  margin-top: 10px;  
   border-radius: var(--radius-xl);
   padding: 24px;
   color: var(--color-on-surface);

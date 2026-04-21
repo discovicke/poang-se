@@ -34,7 +34,7 @@ const getPlayerColor = (index: number) => {
     <div v-if="showPicker && players.length && (canSwitchClaim || !claim)" class="glass-card picker-container">
       <div class="picker-header">
         <h2 class="headline-md">Vem är du?</h2>
-        <p class="body-md text-on-surface-variant">Välj din profil för att kunna redigera poäng.</p>
+        <p class="body-md text-on-surface-variant">Välj din profil.</p>
       </div>
 
       <div class="picker-grid">
@@ -96,19 +96,22 @@ const getPlayerColor = (index: number) => {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  height: 90%;
 }
 
 .picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 16px;
+
 }
 
 .player-choice-card {
   background-color: var(--color-surface-container-high);
+  color: #fff;
   border: 1px solid rgba(70, 72, 75, 0.1);
   border-radius: var(--radius-xl);
-  padding: 24px 16px;
+  padding: 15px 15px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -116,6 +119,7 @@ const getPlayerColor = (index: number) => {
   cursor: pointer;
   transition: all 200ms ease-out;
   position: relative;
+  overflow: scroll;
 }
 
 .player-choice-card:hover:not(:disabled) {

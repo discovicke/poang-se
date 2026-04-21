@@ -276,9 +276,6 @@ const canStart = computed(() => props.game.players.length >= 2)
           <span class="material-symbols-outlined">play_circle</span>
           {{ game.currentRound > 1 ? 'FORTSÄTT MATCH' : 'STARTA MATCH' }}
         </button>
-        <button @click="emit('share')" class="share-btn">
-          <span class="material-symbols-outlined">share</span> DELA LÄNK
-        </button>
       </div>
     </section>
   </div>
@@ -301,7 +298,7 @@ const canStart = computed(() => props.game.players.length >= 2)
 
 .glass-card {
   padding: 32px;
-  height: 100%;
+  height: 90%;
   display: flex;
   flex-direction: column;
 }
@@ -504,6 +501,8 @@ const canStart = computed(() => props.game.players.length >= 2)
   border: none;
   border-radius: var(--radius-xl);
   padding: 24px;
+  height: 64px;
+  margin: 0 auto;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 900;
   font-size: 20px;

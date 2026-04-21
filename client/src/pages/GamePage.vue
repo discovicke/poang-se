@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import type { Game } from '../types/game'
 import { useRouter } from 'vue-router'
@@ -244,8 +244,7 @@ onBeforeUnmount(async () => {
               <h2 class="headline-md text-primary">{{ game.name }}</h2>
             </div>
             <div class="header-actions">
-              <button class="icon-btn" @click="shareLink" title="Dela"><span class="material-symbols-outlined">share</span></button>
-              <button v-if="state.isCreator.value" class="icon-btn" title="Inställningar"><span class="material-symbols-outlined">settings</span></button>
+              <button class="icon-btn" @click="shareLink" title="Dela"><span class="material-symbols-outlined">share</span> Dela spel</button>
             </div>
           </div>
 
@@ -347,15 +346,6 @@ onBeforeUnmount(async () => {
                   @unclaim="onUnclaim"
                 />
               </div>
-
-              <!-- Atmospheric Context -->
-              <div class="atmospheric-image mt-lg">
-                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnDJ9MSuv3MlT1p-FcNZl6Bjo4JPahmRgccqVO2Ndv6CcukXyloGl0StqtJJk8qbiqADt5MGqmjc8pCDOCrUwkiluq35Pm5bTPMUcvdZRVkHBFSxPIweEv7_ajQXpUOMHsucUheMrxaipwqsLA8r47VaAjKOCO_-bwLewaSL9a5lzhNFqdB6autMAVwKAq8xXaIXirNgWRlOM1zzO8R2LfhjW7ATfLeGZX4uYx3san_eroCVZT-kX_sCMazI7_FhGYfEwDkheL2g" alt="Match Atmosphere" />
-                <div class="img-overlay">
-                   <span class="label-xs text-white/50">Spelplats</span>
-                   <p class="headline-sm text-white">Klubblokalen Söder</p>
-                </div>
-              </div>
             </aside>
           </div>
         </div>
@@ -395,7 +385,7 @@ onBeforeUnmount(async () => {
 .header-actions { display: flex; gap: 8px; }
 .icon-btn { background: transparent; border: none; color: var(--color-on-surface-variant); padding: 8px; border-radius: var(--radius-full); cursor: pointer; transition: all 200ms; }
 .icon-btn:hover { background-color: var(--color-surface-container-high); color: var(--color-primary); }
-
+.icon-btn:active { transform: scale(0.9); opacity: 0.7; }
 .scoreboard-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
 @media (min-width: 1024px) { .scoreboard-grid { grid-template-columns: 8fr 4fr; } }
 
