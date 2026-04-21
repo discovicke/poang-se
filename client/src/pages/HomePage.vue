@@ -1,179 +1,232 @@
-﻿<script setup lang="ts">
-import {ref, onMounted} from 'vue'
-import {useRouter} from 'vue-router'
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-interface Game {
-  id: string
-  name: string
-  status: string
-  createdAt: string
-}
-
-const games = ref<Game[]>([])
-
-// Create game form
 const gameName = ref('')
-const lowerIsBetter = ref(false)
-const maxRounds = ref<number | null>(1)
-const startingScore = ref<number>(0)
-const creatorOnly = ref(false)
-const scoreIncrement = ref<number>(1)
-const gameMode = ref<string | null>(null)
-const gameModeValue = ref<number | null>(null)
 const isPrivate = ref(false)
 const gamePassword = ref('')
 const isTemporary = ref(false)
 const expiresAt = ref<string | null>(null)
 
-async function fetchGames() {
-  const res = await fetch('/api/games')
-  games.value = await res.json()
-}
-
 async function createGame() {
   if (!gameName.value.trim()) return
+  
   const res = await fetch('/api/games', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       name: gameName.value,
-      lowerIsBetter: lowerIsBetter.value,
-      maxRounds: maxRounds.value,
-      startingScore: startingScore.value,
-      creatorOnly: creatorOnly.value,
-      scoreIncrement: scoreIncrement.value,
-      gameMode: gameMode.value,
-      gameModeValue: gameModeValue.value,
       isPrivate: isPrivate.value,
       gamePassword: isPrivate.value ? gamePassword.value : null,
       isTemporary: isTemporary.value,
       expiresAt: isTemporary.value ? expiresAt.value : null,
+      // Default values that will be refined in the lobby
+      lowerIsBetter: false,
+      maxRounds: 10,
+      startingScore: 0,
+      scoreIncrement: 1
     }),
   })
+  
   if (res.ok) {
     const game = await res.json()
-    // Spara creatorSecret i localStorage
     localStorage.setItem(`creator:${game.id}`, game.creatorSecret)
-    gameName.value = ''
-    lowerIsBetter.value = false
-    maxRounds.value = 1
-    startingScore.value = 0
-    creatorOnly.value = false
-    scoreIncrement.value = 1
-    gameMode.value = null
-    gameModeValue.value = null
-    isPrivate.value = false
-    gamePassword.value = ''
     router.push(`/games/${game.id}`)
   }
 }
-
-function badgeClass(status: string) {
-  return `badge badge-${status.toLowerCase()}`
-}
-
-onMounted(fetchGames)
 </script>
 
 <template>
-  <div class="page">
-    <h1>POÄNG.SE</h1>
+  <div class="home-page">
+    <div class="container">
+      <header class="page-header text-center">
+        <h1 class="display text-primary mb-md">POÄNGTAVLAN</h1>
+        <p class="body-lg text-on-surface-variant max-w-md mx-auto">
+          Starta en ny match på under 30 sekunder. Inget krångel, bara poäng.
+        </p>
+      </header>
 
-    <div class="card">
-      <h2>Skapa nytt spel</h2>
-      <form @submit.prevent="createGame" class="form-col">
-        <input v-model="gameName" placeholder="Spelnamn" required/>
-
-        <label>
-          <input type="checkbox" v-model="lowerIsBetter"/>
-          Lägre poäng är bättre (t.ex. golf)
-        </label>
-
-        <label>
-          <input type="checkbox" v-model="creatorOnly"/>
-          Bara skaparen kan redigera poäng
-        </label>
-
-        <label>
-          <input type="checkbox" v-model="isPrivate"/>
-          Lösenordsskyddad match
-        </label>
-        <div v-if="isPrivate" class="label">
-          Lösenord
-          <input type="password" v-model="gamePassword" placeholder="Ange lösenord" required/>
-        </div>
-
-        <label>
-          <input type="checkbox" v-model="isTemporary"/>
-          Tillfällig match (avslutas efter angivet datum)
-        </label>
-        <div v-if="isTemporary" class="label">
-          Tillfällig match - Hur länge ska matchen vara aktiv?
-          <input type="datetime-local" v-model="expiresAt"/>
-        </div>
-
-        <div class="form-row">
-          <div class="label">
-            Max antal rundor
-            <input type="number" v-model.number="maxRounds" min="1"/>
+      <main class="main-content">
+        <div class="glass-card start-card">
+          <div class="input-group">
+            <label class="label-sm">Vad ska matchen heta?</label>
+            <input 
+              v-model="gameName" 
+              class="primary-input font-headline" 
+              type="text" 
+              placeholder="t.ex. Fredagsdart" 
+              autofocus
+            />
           </div>
-          <div class="label">
-            Startpoäng
-            <input type="number" v-model.number="startingScore" step="any"/>
+
+          <div class="settings-grid mt-xl">
+            <div class="setting-item">
+              <label class="switch-wrapper">
+                <div class="switch">
+                  <input type="checkbox" v-model="isTemporary">
+                  <span class="slider"></span>
+                </div>
+                <div class="switch-text">
+                  <span class="font-bold">Tillfällig match?</span>
+                  <span class="label-xs text-on-surface-variant">Raderas efter en tid</span>
+                </div>
+              </label>
+              <div v-if="isTemporary" class="mt-md animate-fade-in">
+                <input type="datetime-local" v-model="expiresAt" class="secondary-input" />
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <label class="switch-wrapper">
+                <div class="switch">
+                  <input type="checkbox" v-model="isPrivate">
+                  <span class="slider"></span>
+                </div>
+                <div class="switch-text">
+                  <span class="font-bold">Lösenordsskyddad?</span>
+                  <span class="label-xs text-on-surface-variant">Bara för inbjudna</span>
+                </div>
+              </label>
+              <div v-if="isPrivate" class="mt-md animate-fade-in">
+                <input type="password" v-model="gamePassword" placeholder="Välj lösenord" class="secondary-input" />
+              </div>
+            </div>
           </div>
-          <div class="label">
-            Poäng per klick
-            <input type="number" v-model.number="scoreIncrement" min="0.1" step="any"/>
-          </div>
-        </div>
 
-        <div class="label">
-          Spelläge
-          <select v-model="gameMode">
-            <option :value="null">Standard</option>
-            <option value="BestOf">Bäst av X</option>
-            <option value="FirstTo">Först till X</option>
-          </select>
+          <button @click="createGame" class="submit-btn glow-primary mt-xl" :disabled="!gameName.trim()">
+            SKAPA MATCH
+          </button>
         </div>
-        <div v-if="gameMode" class="label">
-          {{
-            gameMode === 'BestOf'
-              ? 'Bäst av (antal rundor)'
-              : 'Först till (poäng)'
-          }}
-          <input type="number" v-model.number="gameModeValue" min="1"/>
-        </div>
-
-        <button type="submit" class="btn-primary">Skapa spel</button>
-      </form>
-    </div>
-
-    <div class="card">
-      <h2>Alla spel</h2>
-      <p v-if="!games.length" class="empty">Inga spel ännu.</p>
-      <table v-else class="games-table">
-        <thead>
-        <tr>
-          <th>Namn</th>
-          <th>Status</th>
-          <th>Skapad</th>
-          <th></th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="g in games" :key="g.id">
-          <td>{{ g.name }}</td>
-          <td><span :class="badgeClass(g.status)">{{ g.status }}</span></td>
-          <td>{{ new Date(g.createdAt).toLocaleString('sv-SE') }}</td>
-          <td>
-            <router-link :to="`/games/${g.id}`">Öppna →</router-link>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+      </main>
     </div>
   </div>
 </template>
 
+<style scoped>
+.home-page {
+  padding: 80px 24px;
+  min-height: calc(100vh - 72px - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container {
+  max-width: 600px;
+  width: 100%;
+}
+
+.start-card {
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+}
+
+.primary-input {
+  background-color: var(--color-surface-container-high);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  color: var(--color-on-surface);
+  font-size: 24px;
+  width: 100%;
+  text-align: center;
+  transition: all 200ms;
+}
+
+.primary-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary);
+  background-color: var(--color-surface-container-highest);
+}
+
+.secondary-input {
+  background-color: var(--color-surface-container-highest);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
+  color: var(--color-on-surface);
+  width: 100%;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.switch-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+  position: absolute;
+  inset: 0;
+  background-color: var(--color-surface-container-highest);
+  border-radius: 24px;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider { background-color: var(--color-primary); }
+input:checked + .slider:before { transform: translateX(20px); }
+
+.submit-btn {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary-fixed);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.submit-btn:hover:not(:disabled) { transform: scale(1.02); }
+.submit-btn:active:not(:disabled) { transform: scale(0.98); }
+.submit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.animate-fade-in {
+  animation: fadeIn 300ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.text-center { text-align: center; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+.max-w-md { max-width: 448px; }
+.mb-md { margin-bottom: 16px; }
+.mt-xl { margin-top: 32px; }
+.mt-md { margin-top: 16px; }
+</style>
