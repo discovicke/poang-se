@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import type { GamePlayer, ClaimInfo } from '../types/game'
 
 const props = defineProps<{
