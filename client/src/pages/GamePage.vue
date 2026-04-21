@@ -8,7 +8,6 @@ import { useSignalR } from '../composables/useSignalR'
 import { useGameState } from '../composables/useGameState'
 
 import PageNotFound from './PageNotFound.vue'
-import AppHeader from '../components/AppHeader.vue'
 import ClaimPicker from '../components/ClaimPicker.vue'
 import GameLobby from '../components/GameLobby.vue'
 import GameControls from '../components/GameControls.vue'

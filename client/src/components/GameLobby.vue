@@ -23,6 +23,7 @@ const lobbyMaxRounds = ref<number | null>(props.game.maxRounds)
 const lobbyIncrement = ref<number>(props.game.scoreIncrement)
 const lobbyLowerIsBetter = ref(props.game.lowerIsBetter)
 const lobbyCreatorOnly = ref(props.game.creatorOnly)
+const lobbyTeamBasedWinner = ref(props.game.teamBasedWinner)
 const lobbyGameMode = ref<string | null>(props.game.gameMode)
 const lobbyGameModeValue = ref<number | null>(props.game.gameModeValue)
 const lobbyGameModeTarget = ref<string>(props.game.gameModeTarget ?? 'points')
@@ -33,6 +34,7 @@ watch(() => props.game, (g) => {
   lobbyIncrement.value = g.scoreIncrement
   lobbyLowerIsBetter.value = g.lowerIsBetter
   lobbyCreatorOnly.value = g.creatorOnly
+  lobbyTeamBasedWinner.value = g.teamBasedWinner
   lobbyGameMode.value = g.gameMode
   lobbyGameModeValue.value = g.gameModeValue
   lobbyGameModeTarget.value = g.gameModeTarget ?? 'points'
