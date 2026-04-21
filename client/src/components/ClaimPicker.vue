@@ -1,6 +1,7 @@
 ﻿<script setup lang="ts">
 import type {GamePlayer, ClaimInfo} from '../types/game'
 
+
 const props = defineProps<{
   players: GamePlayer[]
   canSwitchClaim: boolean
@@ -25,7 +26,7 @@ function isClaimedByMe(p: GamePlayer): boolean {
 
 <template>
   <!-- Claim picker dialog -->
-  <div v-if="showPicker && players.length && (canSwitchClaim || !claim)" class="card">
+  <div v-if="showPicker && players.length && canSwitchClaim" class="card">
     <h2>Vem är du?</h2>
     <div class="claim-buttons">
       <button
