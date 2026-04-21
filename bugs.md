@@ -1,0 +1,37 @@
+# Buggar
+### Matchrundor
+- [ ] Vid "först till X" så sätts rundor till 10 rundor, det bör rimligtvis bara skapas en runda och sedan plussa på extrarundor tills vinstvillkoret är uppnått.
+- [ ] När man pausar ett spel och har avancerat rundor så startar man på runda 1 igen. Poängen är kvar men staten håller inte koll på vilken runda som det pausades på.
+
+### Multiplayer
+- [ ] När en speladmin väljer att enbart den ska kunna redigera poäng så är allt låst för övriga spelare under ett aktivt spel.
+  - Rimligtvis tänker jag att övriga spelare under denna matchform fortfarande borde kunna lägga till och ta bort poäng för sin egen spelarentitet under sagd runda.
+  - Spelaren ser enbart rundan spelet är på och redigerar den poängen, spelet avancerar till ny runda och då ser spelaren den nya rundan och kan redigera den poängen.
+    - Ska spelaren ha möjlighet att "byta flik" i sidebar/FAB för att se poängmatrisen över hela matchen? Isåfall tänker jag att i "aktiv match"-komponenten ser den spelaren enbart en poängkomponent och knapparna för att avancera, pausa och avsluta ett spel.
+    - dvs så flyttas poängmatrisen ut till en annan "flik".
+
+### Poängräkning
+- [ ] Spelet kunde ibland låsa sig och enbart ge [1] eller [3] poäng till en spelare vid spamtryck av poäng. Jag har inte stött på buggen senaste 24h och jag har inte kunnat felsöka vad som har orsakat problemet.
+  - Slött system vid uppstart (läs: något som inte startats igång innan spamanrop) eller är det state som låser sig?
+  - Anropen ser normala ut i webbläsarens Networkflik.
+  - Jag tyckte också att serverns loggsystem såg normalt ut vid varje tillfället.
+     
+- [ ] Poänggrafen ger felaktigt antal spelade rundor för en spelare och den spelaren har fått 0p någon runda.
+  - Spelarens rundor med poäng sammanställs korrekt, men den hoppar över alla rundor utan poäng vilket ger intrycket att spelaren har spelat färre rundor än övriga spelare.
+  - Grafen borde visa att spelarens graflinje är horisontellt rak (stagnerad poängutveckling) under de rundor som 0p är registrerade. Jag gissar att det är CumulativeValue-uträkningen i databasen och service-filen på servern som spökar till det för frontend.
+
+- [ ] När spelet är inställt på att beräkna vinnare för lagpoäng istället för spelarpoäng fungerar inte. Frontend visar spelarvinst oavsett om spelaren tillhör vinnande eller förlorande lag. Inget lag deklareras som vinnare.
+
+### Styling
+- [ ] Checkbox och rubriken för inställningarna "Endast jag kan redigera" och "Lagvinnare" bör vara på samma nivå horisontellt. Rubrikerna bör vara fetmarkerade (eller ha en högre visuell hierarki). Texten under bör vara "gråare" och ha en lägre visuell hierarki samt vara placerade under checkbox & rubrik.
+T.ex:
+````
+[ ] **ENDAST JAG KAN REDIGERA**
+  Enbart speladmin kan redigera spelares
+  poäng, ger mindre möjlighet för övriga
+  deltagare att påverka matchens inställningar.
+[ ]  **LAGVINNARE**
+  Poäng och vinnare beräknas
+  per lag istället för per spelare.
+````
+- [ ] Visuell hierarki för deklarering av lag och spelare, och dess kopplingar. Det är stökigt och ostyleat just nu. Hur ska vi lösa det? Står still för mig hur man gör det snyggt.
