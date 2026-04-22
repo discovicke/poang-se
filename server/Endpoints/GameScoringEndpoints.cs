@@ -2,7 +2,7 @@
 using server.Mappers;
 using server.Models;
 using server.Service;
-
+using server.Helpers;
 namespace server.Endpoints;
 
 /// <summary>
@@ -12,9 +12,12 @@ public static class GameScoringEndpoints
 {
     public static WebApplication MapGameScoringEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/games/{id:guid}/score-chart", async (Guid id, GameLifecycleService svc, GameScoringService scoreSvc) =>
+        var tokenLink = app.Services.GetRequiredService<CancellationManager.TokenLinker>();
+
+        app.MapGet("/api/games/{id:guid}/score-chart", async (Guid id, GameLifecycleService svc, GameScoringService scoreSvc, CancellationToken requestCt) =>
            {
-               var game = await svc.GetGameById(id);
+               using var ct = tokenLink.Link(requestCt);
+               var game = await svc.GetGameById(id, ct);
                if (game is null)
                    return Results.NotFound();
                var chartData = scoreSvc.BuildScoreChartData(game);
@@ -23,8 +26,10 @@ public static class GameScoringEndpoints
            .WithSummary("Hämta data för poängdiagram")
            .WithTags("Poäng");
 
-        app.MapPost("/api/games/{id:guid}/scores", async (Guid id, AddScoreToGameDto dto, GameScoringService svc) =>
+        app.MapPost("/api/games/{id:guid}/scores", async (Guid id, AddScoreToGameDto dto, GameScoringService svc, CancellationToken requestCt) =>
             {
+                using var ct = tokenLink.Link(requestCt);
+
                 var score = new Score
                 {
                     Id = Guid.NewGuid(),
@@ -41,9 +46,10 @@ public static class GameScoringEndpoints
             .WithSummary("Registrera poäng")
             .WithTags("Poäng");
 
-        app.MapPut("/api/games/{id:guid}/scores", async (Guid id, UpdateScoreValueDto dto, GameScoringService svc) =>
+        app.MapPut("/api/games/{id:guid}/scores", async (Guid id, UpdateScoreValueDto dto, GameScoringService svc, CancellationToken requestCt) =>
             {
-                var result = await svc.UpdateScoreValue(id, dto.PlayerId, dto.Round, dto.Value);
+                using var ct = tokenLink.Link(requestCt);
+                var result = await svc.UpdateScoreValue(id, dto.PlayerId, dto.Round, dto.Value, ct);
                 return result is null
                     ? Results.NotFound()
                     : Results.Ok(result.ToScoreResponse());

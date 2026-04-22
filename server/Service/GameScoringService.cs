@@ -2,17 +2,19 @@
 using Microsoft.EntityFrameworkCore;
 using server.Hubs;
 using server.Models;
-
+using server.Helpers;
 namespace server.Service;
 
 /// <summary>
 /// Hanterar poängregistrering, poänguppdatering och alla vinstvillkorsberäkningar.
 /// </summary>
-public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
+public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub, CancellationManager.TokenLinker tokenLinker)
 {
     /// <summary>Registrerar en poäng och kontrollerar "Först till X poäng".</summary>
-    public async Task<Score> AddScore(Score score)
+    public async Task<Score> AddScore(Score score, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
+
         var game = await db.Games.FindAsync(score.GameId);
         var startingScore = game?.StartingScore ?? 0;
 
@@ -23,7 +25,7 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
         score.CumulativeValue = startingScore + previousSum + score.Value;
 
         db.Scores.Add(score);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
 
         await hub.Clients.Group(score.GameId.ToString())
             .SendAsync("ScoreAdded", new
@@ -36,20 +38,22 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
                 score.CreatedAt
             });
 
-        await CheckFirstToWin(score.GameId);
+        await CheckFirstToWin(score.GameId, ct);
         return score;
     }
 
     /// <summary>Uppdaterar poängen för en specifik spelare och runda. Räknar om CumulativeValue.</summary>
-    public async Task<Score?> UpdateScoreValue(Guid gameId, Guid playerId, int round, double newValue)
+    public async Task<Score?> UpdateScoreValue(Guid gameId, Guid playerId, int round, double newValue, CancellationToken requestCt = default)
     {
-        var game = await db.Games.FindAsync(gameId);
+        using var ct = tokenLinker.Link(requestCt);
+
+        var game = await db.Games.FirstOrDefaultAsync(g => g.Id == gameId, ct);
         var startingScore = game?.StartingScore ?? 0;
 
         var playerScores = await db.Scores
             .Where(s => s.GameId == gameId && s.PlayerId == playerId)
             .OrderBy(s => s.Round).ThenBy(s => s.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(ct);
 
         var target = playerScores.FirstOrDefault(s => s.Round == round);
         if (target == null)
@@ -64,10 +68,10 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
             s.CumulativeValue = running;
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
 
-        await CheckFirstToWin(gameId);
+        await CheckFirstToWin(gameId, ct);
         return target;
     }
 
@@ -145,9 +149,11 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
     }
 
     /// <summary>Kontrollerar "Först till X poäng" vid poängändring.</summary>
-    public async Task CheckFirstToWin(Guid gameId)
+    public async Task CheckFirstToWin(Guid gameId, CancellationToken requestCt = default)
     {
-        var game = await db.Games.Include(g => g.Scores).FirstOrDefaultAsync(g => g.Id == gameId);
+        using var ct = tokenLinker.Link(requestCt);
+
+        var game = await db.Games.Include(g => g.Scores).FirstOrDefaultAsync(g => g.Id == gameId, ct);
         if (game is not { Status: GameStatus.Active })
             return;
         if (game.GameMode != "FirstTo" || !game.GameModeValue.HasValue)
@@ -162,20 +168,21 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
                 .GroupBy(s => s.TeamId!.Value)
                 .Select(g => new { Total = g.Sum(s => s.Value) });
             if (totals.Any(t => t.Total >= target))
-                await FinishGameInternal(game);
+                await FinishGameInternal(game, ct);
         }
         else
         {
             var totals = game.Scores.GroupBy(s => s.PlayerId)
                 .Select(g => new { Total = g.Sum(s => s.Value) });
             if (totals.Any(p => p.Total >= target))
-                await FinishGameInternal(game);
+                await FinishGameInternal(game, ct);
         }
     }
 
     /// <summary>Kontrollerar rundbaserade vinstvillkor (BestOf, FirstTo-rounds).</summary>
-    public async Task CheckRoundBasedWin(Guid gameId)
+    public async Task CheckRoundBasedWin(Guid gameId, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         var game = await db.Games
             .Include(g => g.Scores).Include(g => g.Teams)
             .FirstOrDefaultAsync(g => g.Id == gameId);
@@ -203,12 +210,13 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
     }
 
     /// <summary>Intern finish som tar ett redan laddat game-objekt.</summary>
-    private async Task FinishGameInternal(Game game)
+    private async Task FinishGameInternal(Game game, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         game.Status = GameStatus.Finished;
         game.FinishedAt = DateTime.UtcNow;
         game.WinnerId = CalculateWinnerId(game);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(game.Id.ToString()).SendAsync("GameUpdated");
     }
 
