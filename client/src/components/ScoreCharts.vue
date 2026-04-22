@@ -10,32 +10,65 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const props = defineProps<{
   gameId: string
+  startingScore?: number
 }>()
 
 const chartData = ref<ScoreChartData | null>(null)
 const { drawScoreChart } = useGameApi(props.gameId)
 
 onMounted(async () => {
-  chartData.value = await drawScoreChart({ gameId: props.gameId })
+  const raw = await drawScoreChart({ gameId: props.gameId })
+  if (!raw) return
+
+  const startValue = props.startingScore ?? 0
+
+  chartData.value = {
+    labels: ['Start', ...raw.labels],
+    datasets: raw.datasets.map(ds => ({
+      ...ds,
+      data: [startValue, ...ds.data],
+    })),
+  }
 })
 
 const chartOptions: ChartOptions<'line'> = {
   responsive: true,
   maintainAspectRatio: false,
+  elements: {
+    point: {
+      pointStyle: 'circle',
+      radius: 5,
+      hoverRadius: 8,
+      borderWidth: 2,
+      hoverBorderWidth: 3,
+      backgroundColor: '#0c0e11',   // --color-background (hollow center)
+    },
+    line: {
+      borderWidth: 2,
+      tension: 0.35,                // slight curve
+      borderCapStyle: 'round',
+      borderJoinStyle: 'round',
+    },
+  },
   plugins: {
     legend: {
       position: 'top' as const,
       labels: {
-        color: '#f9f9fd', // var(--color-on-surface)
+        color: '#f9f9fd',
         font: {
           family: 'Manrope',
           size: 12,
           weight: 'bold',
         },
+        usePointStyle: true,
+        pointStyle: 'circle',
+        boxWidth: 8,
+        boxHeight: 8,
+        padding: 20,
       },
     },
     title: {
-      display: false, // We use the h2 in template
+      display: false,
     },
     tooltip: {
       backgroundColor: '#1d2024', // var(--color-surface-container-high)
@@ -101,11 +134,11 @@ const chartOptions: ChartOptions<'line'> = {
       <h2 class="headline-sm">Poängutveckling</h2>
       <span class="material-symbols-outlined text-primary">insights</span>
     </div>
-    
+
     <div v-if="chartData" class="chart-wrapper">
       <Line :data="chartData" :options="chartOptions" />
     </div>
-    
+
     <div v-else class="loading-state">
       <div class="loader-sm"></div>
       <p class="label-xs italic text-on-surface-variant">Ritar poängdiagram...</p>
