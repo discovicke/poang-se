@@ -21,8 +21,6 @@ const route = useRoute()
         <router-view :key="route.fullPath" />
       </main>
 
-      <!-- Shared Footer -->
-      <!-- <AppFooter /> -->
     </div>
 
     <!-- Mobile Bottom Nav -->
