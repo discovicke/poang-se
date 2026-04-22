@@ -24,7 +24,7 @@ const lobbyIncrement = ref<number>(props.game.scoreIncrement)
 const lobbyLowerIsBetter = ref(props.game.lowerIsBetter)
 const lobbyCreatorOnly = ref(props.game.creatorOnly)
 const lobbyTeamBasedWinner = ref(props.game.teamBasedWinner)
-const lobbyGameMode = ref<string | null>(props.game.gameMode)
+const lobbyGameMode = ref<string | null>(props.game.gameMode ?? '')
 const lobbyGameModeValue = ref<number | null>(props.game.gameModeValue)
 const lobbyGameModeTarget = ref<string>(props.game.gameModeTarget ?? 'points')
 const lobbyStartingScore = ref<number>(props.game.startingScore)
@@ -134,11 +134,18 @@ const canStart = computed(() => props.game.players.length >= 2)
           <div class="setting-group">
             <label class="label-sm">Spelläge</label>
             <select v-model="lobbyGameMode" @change="emitSave" class="primary-select">
-              <option :value="null">Standard (X rundor)</option>
+              <option value="">Standard (X rundor)</option>
               <option value="BestOf">Bäst av X</option>
               <option value="FirstTo">Först till X</option>
             </select>
           </div>
+
+          <!-- Rundor input för Standard läge -->
+          <div v-if="!lobbyGameMode" class="setting-group animate-slide">
+            <label class="label-sm">Antal rundor</label>
+            <input type="number" v-model.number="lobbyMaxRounds" @change="emitSave" class="primary-input" />
+          </div>
+
 
           <div v-if="lobbyGameMode === 'FirstTo'" class="setting-group animate-slide">
             <label class="label-sm">Måltyp</label>

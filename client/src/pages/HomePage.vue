@@ -24,7 +24,7 @@ async function createGame() {
       expiresAt: isTemporary.value ? expiresAt.value : null,
       // Default values that will be refined in the lobby
       lowerIsBetter: false,
-      maxRounds: 10,
+      maxRounds: 1 ,
       startingScore: 0,
       scoreIncrement: 1
     }),
