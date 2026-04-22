@@ -14,10 +14,10 @@ defineProps<{
           <span class="label-sm text-on-surface-variant">{{ matchContext || 'Pågående Match' }}</span>
           <h2 class="headline-sm text-primary">{{ matchName }}</h2>
         </div>
-        <span class="logo mobile-only">Poängtavlan</span>
+        <span class="logo mobile-only">Poäng.se</span>
       </template>
       <template v-else>
-        <span class="logo">Poängtavlan</span>
+        <span class="logo mobile-only">Poäng.se</span>
       </template>
     </div>
 

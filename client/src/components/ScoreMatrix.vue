@@ -96,19 +96,6 @@ function onManualInput(playerId: string, round: number, event: Event) {
           </div>
         </div>
       </div>
-
-      <!-- Totals card -->
-      <div class="round-card glass-card round-card--totals">
-        <div class="round-card-header">
-          <span class="headline-sm text-on-surface-variant">{{ startingScore ? 'Kvar' : 'Total' }}</span>
-        </div>
-        <div class="round-player-list">
-          <div v-for="p in players" :key="p.playerId" class="round-player-row">
-            <span class="round-player-name">{{ p.playerName }}</span>
-            <span class="headline-sm text-primary">{{ playerDisplayTotal(p.playerId) }}</span>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -165,6 +152,7 @@ function onManualInput(playerId: string, round: number, event: Event) {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  padding-bottom: 60px;
 }
 
 .round-card {
