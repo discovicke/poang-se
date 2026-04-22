@@ -4,7 +4,7 @@ using Scalar.AspNetCore;
 using server.Endpoints;
 using server.Extensions;
 using server.Hubs;
-
+using server.Helpers;
 var builder = WebApplication.CreateBuilder(args);
 
 if (builder.Environment.IsDevelopment())
@@ -21,6 +21,9 @@ builder.Services
     .AddAppCors()
     .AddOpenApi()
     .AddSignalR();
+
+
+builder.Services.AddSingleton<CancellationManager.TokenLinker>();
 
 var app = builder.Build();
 
