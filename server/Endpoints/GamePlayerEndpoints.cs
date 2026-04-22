@@ -91,11 +91,11 @@ public static class GamePlayerEndpoints
             .WithTags("Spelare & Lag");
 
         app.MapPut("/api/games/{id:guid}/players/{playerId:guid}/rename",
-                async (Guid id, Guid playerId, RenameDto dto, GamePlayerService svc) =>
+                async (Guid id, Guid playerId, RenameDto dto, GamePlayerService svc, CancellationToken ct) =>
                 {
                     if (string.IsNullOrWhiteSpace(dto.Name))
                         return Results.BadRequest("Namn saknas");
-                    return await svc.RenamePlayer(id, playerId, dto.Name)
+                    return await svc.RenamePlayer(id, playerId, dto.Name, ct)
                         ? Results.NoContent()
                         : Results.NotFound();
                 })

@@ -59,18 +59,20 @@ public class GamePlayerService(AppDbContext db, IHubContext<GameHub> hub, Cancel
     }
 
     /// <summary>Byter namn på en spelare. Kräver Waiting-status.</summary>
-    public async Task<bool> RenamePlayer(Guid gameId, Guid playerId, string newName)
+    public async Task<bool> RenamePlayer(Guid gameId, Guid playerId, string newName, CancellationToken requestCt = default)
     {
-        var game = await db.Games.FindAsync(gameId);
+        using var ct = tokenLinker.Link(requestCt);
+
+        var game = await db.Games.FindAsync(gameId, ct);
         if (game is null || game.Status != GameStatus.Waiting)
             return false;
 
-        var player = await db.Players.FindAsync(playerId);
+        var player = await db.Players.FindAsync(playerId, ct);
         if (player is null)
             return false;
 
         player.UserName = newName.Trim();
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
         return true;
     }
