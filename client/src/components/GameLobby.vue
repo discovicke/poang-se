@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import {ref, watch, computed} from 'vue'
+import {ref, watch, computed, nextTick} from 'vue'
 import type {Game} from '../types/game'
+
+const vFocus = {
+  mounted: (el: HTMLElement) => nextTick(() => el.focus())
+}
 
 const props = defineProps<{
   game: Game
@@ -274,12 +278,17 @@ const canStart = computed(() => props.game.players.length >= 2)
                 <template v-if="editingTeamId === team.id">
                   <input
                     v-model="editingTeamName"
+                    v-focus
                     class="inline-input"
                     @keyup.enter="saveTeamName(team.id)"
-                    @blur="saveTeamName(team.id)"
-                    @keyup.escape="editingTeamId = null"
-                    autofocus
+                    @keyup.esc="editingTeamId = null"
                   />
+                  <button @click="saveTeamName(team.id)" class="micro-btn save-btn" title="Spara">
+                    <span class="material-symbols-outlined">check</span>
+                  </button>
+                  <button @click="editingTeamId = null" class="micro-btn" title="Avbryt">
+                    <span class="material-symbols-outlined">close</span>
+                  </button>
                 </template>
                 <span v-else class="team-name">{{ team.name }}</span>
                 <span class="count-badge">{{ playersInTeam(team.id).length }}</span>
@@ -303,12 +312,17 @@ const canStart = computed(() => props.game.players.length >= 2)
                   <template v-if="editingPlayerId === p.playerId">
                     <input
                       v-model="editingPlayerName"
+                      v-focus
                       class="inline-input"
                       @keyup.enter="savePlayerName(p.playerId)"
-                      @blur="savePlayerName(p.playerId)"
-                      @keyup.escape="editingPlayerId = null"
-                      autofocus
+                      @keyup.esc="editingPlayerId = null"
                     />
+                    <button @click="savePlayerName(p.playerId)" class="micro-btn save-btn" title="Spara">
+                      <span class="material-symbols-outlined">check</span>
+                    </button>
+                    <button @click="editingPlayerId = null" class="micro-btn" title="Avbryt">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
                   </template>
                   <span v-else class="player-name">{{ p.playerName }}</span>
                   <span v-if="p.claimedByConnectionId" class="online-dot" title="Online"></span>
@@ -318,10 +332,10 @@ const canStart = computed(() => props.game.players.length >= 2)
                     <option value="">Utan lag</option>
                     <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
                   </select>
-                  <button @click="startEditPlayer(p.playerId, p.playerName)" class="micro-btn" title="Byt namn">
+                  <button v-if="editingPlayerId !== p.playerId" @click="startEditPlayer(p.playerId, p.playerName)" class="micro-btn" title="Byt namn">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
-                  <button @click="emit('removePlayer', p.playerId)" class="micro-btn danger" title="Ta bort">
+                  <button v-if="editingPlayerId !== p.playerId" @click="emit('removePlayer', p.playerId)" class="micro-btn danger" title="Ta bort">
                     <span class="material-symbols-outlined">close</span>
                   </button>
                 </div>
@@ -351,12 +365,17 @@ const canStart = computed(() => props.game.players.length >= 2)
                   <template v-if="editingPlayerId === p.playerId">
                     <input
                       v-model="editingPlayerName"
+                      v-focus
                       class="inline-input"
                       @keyup.enter="savePlayerName(p.playerId)"
-                      @blur="savePlayerName(p.playerId)"
-                      @keyup.escape="editingPlayerId = null"
-                      autofocus
+                      @keyup.esc="editingPlayerId = null"
                     />
+                    <button @click="savePlayerName(p.playerId)" class="micro-btn save-btn" title="Spara">
+                      <span class="material-symbols-outlined">check</span>
+                    </button>
+                    <button @click="editingPlayerId = null" class="micro-btn" title="Avbryt">
+                      <span class="material-symbols-outlined">close</span>
+                    </button>
                   </template>
                   <span v-else class="player-name">{{ p.playerName }}</span>
                   <span v-if="p.claimedByConnectionId" class="online-dot" title="Online"></span>
@@ -367,10 +386,10 @@ const canStart = computed(() => props.game.players.length >= 2)
                     <option value="">Utan lag</option>
                     <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
                   </select>
-                  <button @click="startEditPlayer(p.playerId, p.playerName)" class="micro-btn" title="Byt namn">
+                  <button v-if="editingPlayerId !== p.playerId" @click="startEditPlayer(p.playerId, p.playerName)" class="micro-btn" title="Byt namn">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
-                  <button @click="emit('removePlayer', p.playerId)" class="micro-btn danger" title="Ta bort">
+                  <button v-if="editingPlayerId !== p.playerId" @click="emit('removePlayer', p.playerId)" class="micro-btn danger" title="Ta bort">
                     <span class="material-symbols-outlined">close</span>
                   </button>
                 </div>
@@ -956,6 +975,11 @@ const canStart = computed(() => props.game.players.length >= 2)
   display: flex;
   align-items: center;
   transition: all 150ms;
+}
+
+.micro-btn.save-btn:hover {
+  color: var(--color-primary);
+  background-color: rgba(132, 173, 255, 0.1);
 }
 
 .add-btn:hover {

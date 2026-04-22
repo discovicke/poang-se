@@ -49,12 +49,16 @@ T.ex:
 
 - [X] Lag borde också tilldelas en färg, spelarnas färg borde korrelera med lagets färg när de är indelade i lag.
 
-- [ ] Lag och spelare ska kunna flytta runt i lobbyn. Möjlighet att välja vilken spelare som tillhör vilket lag.
+- [X] Lag och spelare ska kunna flytta runt i lobbyn. Möjlighet att välja vilken spelare som tillhör vilket lag.
   - Lagen är som "rubriker" med radslots under som man kan flytta spelare till genom att dra eller välja med dropdown.
 
-- [ ] Lag och spelares namn måste kunna redigeras efter skapande i lobbyn.
+- [X] Lag och spelares namn måste kunna redigeras efter skapande i lobbyn.
+  - [ ] Lag och spelare har en redigeringsruta, men det skickas inte iväg något event när man sparar så att servern kan döpa om spelaren/laget. Jag blir galen och har gett upp /Viktor.
+  - Kanske räcker med att det går att radera en spelare/ lag så kan man lägga till en ny?
+- [X] Visuell hierarki för deklarering av lag och spelare, och dess kopplingar. Det är stökigt och ostyleat just nu. Hur ska vi lösa det? Står still för mig hur man gör det snyggt.
 
-- [ ] Visuell hierarki för deklarering av lag och spelare, och dess kopplingar. Det är stökigt och ostyleat just nu. Hur ska vi lösa det? Står still för mig hur man gör det snyggt.
+- [X] Lag och spelare ska kunna flytta runt i lobbyn.
 
+- [ ] Om en spelare som är claimad raderas så borde signalR uppdatera och ta bort claim åt en spelare så man kan välja om, just nu så försvinner claimpicker-rutan när en spelare raderas utan möjlighet till omval.
 
 - [ ] Det är lite overflow-problem i aktiva match när det är många spelare, måste ha en overhaul hur poängmatrisen visas i mobilläge när det är många spelare. Jag vill undvika en horisontell scroll, hur ska det lösas? Ska man se runda för runda och ha "kort" liknande claimpickern eller att spelarna hamnar under varandra varje angiven runda som i en lista istället för att stå på horisontell rad?
