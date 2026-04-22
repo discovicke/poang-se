@@ -30,14 +30,21 @@ const getPlayerColor = (index: number) => {
 
 <template>
   <div class="claim-wrapper">
-    <!-- Claim Picker Modal/Overlay Style -->
-    <div v-if="showPicker && players.length && (canSwitchClaim || !claim)" class="glass-card picker-container">
+    <!-- Claim Picker -->
+    <div v-if="showPicker && (canSwitchClaim || !claim)" class="glass-card picker-container">
       <div class="picker-header">
         <h2 class="headline-md">Vem är du?</h2>
-        <p class="body-md text-on-surface-variant">Välj din profil.</p>
+        <p class="body-md text-on-surface-variant">Välj din profil för att följa med i spelet.</p>
       </div>
 
-      <div class="picker-grid">
+      <!-- Empty state: no players yet -->
+      <div v-if="!players.length" class="picker-empty-state">
+        <span class="material-symbols-outlined">person_add</span>
+        <p class="label-sm">Inga spelare har lagts till ännu.</p>
+        <p class="body-md text-on-surface-variant">Lägg till spelare i lobbyn så kan du välja din profil här.</p>
+      </div>
+
+      <div v-else class="picker-grid">
         <button
           v-for="(p, index) in players" :key="p.playerId"
           class="player-choice-card"
@@ -73,7 +80,9 @@ const getPlayerColor = (index: number) => {
           <span v-if="claim.role === 'creator'" class="role-badge">Admin</span>
           <span v-else-if="claim.role === 'player'" class="role-badge player">Spelare</span>
           <p class="body-md">
-            {{ claim.role === 'creator' ? 'Du är spelskapare' : `Inloggad som ${claim.playerName}` }}
+            {{
+              claim.role === 'creator' ? `Spelar som ${claim.playerName} (Spelskapare)` : `Spelar som ${claim.playerName}`
+            }}
           </p>
         </div>
       </div>
@@ -96,7 +105,22 @@ const getPlayerColor = (index: number) => {
   display: flex;
   flex-direction: column;
   gap: 32px;
-  height: 90%;
+}
+
+.picker-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+  opacity: 0.6;
+}
+
+.picker-empty-state span.material-symbols-outlined {
+  font-size: 48px;
+  color: var(--color-on-surface-variant);
 }
 
 .picker-grid {
@@ -119,7 +143,7 @@ const getPlayerColor = (index: number) => {
   cursor: pointer;
   transition: all 200ms ease-out;
   position: relative;
-  overflow: scroll;
+  overflow: hidden;
 }
 
 .player-choice-card:hover:not(:disabled) {
