@@ -3,7 +3,7 @@ import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
 import AppSidebar from './components/AppSidebar.vue'
 import AppBottomNav from './components/AppBottomNav.vue'
-import AppFooter from './components/AppFooter.vue'
+
 
 const route = useRoute()
 </script>
