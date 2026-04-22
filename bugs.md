@@ -55,7 +55,7 @@ T.ex:
   - Lagen är som "rubriker" med radslots under som man kan flytta spelare till genom att dra eller välja med dropdown.
 
 - [X] Lag och spelares namn måste kunna redigeras efter skapande i lobbyn.
-  - [ ] Lag och spelare har en redigeringsruta, men det skickas inte iväg något event när man sparar så att servern kan döpa om spelaren/laget. Jag blir galen och har gett upp /Viktor.
+  - [X] Lag och spelare har en redigeringsruta, men det skickas inte iväg något event när man sparar så att servern kan döpa om spelaren/laget. Jag blir galen och har gett upp /Viktor.
   - Kanske räcker med att det går att radera en spelare/ lag så kan man lägga till en ny?
 - [X] Visuell hierarki för deklarering av lag och spelare, och dess kopplingar. Det är stökigt och ostyleat just nu. Hur ska vi lösa det? Står still för mig hur man gör det snyggt.
 
