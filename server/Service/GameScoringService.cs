@@ -221,11 +221,20 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub)
         {
             PlayerName = g.Key,
             Scores = g.OrderBy(s => s.Round)
-            .Select(s => s.Value)
-            .ToList(),
-            CumulativeScores =
-            g.OrderBy(s => s.Round)
-            .Select(s => s.CumulativeValue)
+            .Where(s => s.Round != null)
+            .ToDictionary(s => s.Round!.Value),
+            CumulativeScores = Enumerable.Range(1, game.CurrentRound)
+            .Select(round =>
+            {
+                var scoreEachRound = g.FirstOrDefault(s => s.Round == round);
+                if (scoreEachRound != null)
+                    return scoreEachRound?.CumulativeValue ?? 0;
+
+                return g.Where(s => s.Round < round)
+                .OrderByDescending(s => s.Round)
+                .FirstOrDefault()?.CumulativeValue ?? 0;
+            })
+            .ToList()
         })
             .ToList();
 
