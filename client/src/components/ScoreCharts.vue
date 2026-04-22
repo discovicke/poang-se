@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
-import type { ChartOptions } from 'chart.js'
-import { Line } from 'vue-chartjs'
-import { ref, onMounted } from 'vue'
-import { useGameApi } from '../composables/useGameApi'
-import type { ScoreChartData } from '../types/game'
+import {Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend} from 'chart.js'
+import type {ChartOptions} from 'chart.js'
+import {Line} from 'vue-chartjs'
+import {ref, onMounted} from 'vue'
+import {useGameApi} from '../composables/useGameApi'
+import type {ScoreChartData} from '../types/game'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -14,10 +14,10 @@ const props = defineProps<{
 }>()
 
 const chartData = ref<ScoreChartData | null>(null)
-const { drawScoreChart } = useGameApi(props.gameId)
+const {drawScoreChart} = useGameApi(props.gameId)
 
 onMounted(async () => {
-  const raw = await drawScoreChart({ gameId: props.gameId })
+  const raw = await drawScoreChart({gameId: props.gameId})
   if (!raw) return
 
   const startValue = props.startingScore ?? 0
@@ -74,9 +74,9 @@ const chartOptions: ChartOptions<'line'> = {
       backgroundColor: '#1d2024', // var(--color-surface-container-high)
       padding: 12,
       titleColor: '#84adff', // var(--color-primary)
-      titleFont: { family: 'Space Grotesk', weight: 'bold' },
+      titleFont: {family: 'Space Grotesk', weight: 'bold'},
       bodyColor: '#f9f9fd',
-      bodyFont: { family: 'Manrope' },
+      bodyFont: {family: 'Manrope'},
       borderColor: 'rgba(132, 173, 255, 0.2)',
       borderWidth: 1,
       cornerRadius: 8,
@@ -91,7 +91,7 @@ const chartOptions: ChartOptions<'line'> = {
       },
       ticks: {
         color: '#aaabaf', // var(--color-on-surface-variant)
-        font: { family: 'Manrope' }
+        font: {family: 'Manrope'}
       },
       title: {
         display: true,
@@ -111,7 +111,7 @@ const chartOptions: ChartOptions<'line'> = {
       },
       ticks: {
         color: '#aaabaf',
-        font: { family: 'Manrope' }
+        font: {family: 'Manrope'}
       },
       title: {
         display: true,
@@ -136,7 +136,7 @@ const chartOptions: ChartOptions<'line'> = {
     </div>
 
     <div v-if="chartData" class="chart-wrapper">
-      <Line :data="chartData" :options="chartOptions" />
+      <Line :data="chartData" :options="chartOptions"/>
     </div>
 
     <div v-else class="loading-state">
@@ -183,9 +183,16 @@ const chartOptions: ChartOptions<'line'> = {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.text-primary { color: var(--color-primary); }
-.text-on-surface-variant { color: var(--color-on-surface-variant); }
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-on-surface-variant {
+  color: var(--color-on-surface-variant);
+}
 </style>
