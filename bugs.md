@@ -21,7 +21,9 @@
   - Spelarens rundor med poäng sammanställs korrekt, men den hoppar över alla rundor utan poäng vilket ger intrycket att spelaren har spelat färre rundor än övriga spelare.
   - Grafen borde visa att spelarens graflinje är horisontellt rak (stagnerad poängutveckling) under de rundor som 0p är registrerade. Jag gissar att det är CumulativeValue-uträkningen i databasen och service-filen på servern som spökar till det för frontend.
 
-- [ ] När spelet är inställt på att beräkna vinnare för lagpoäng istället för spelarpoäng fungerar inte. Frontend visar spelarvinst oavsett om spelaren tillhör vinnande eller förlorande lag. Inget lag deklareras som vinnare.
+- [X] När spelet är inställt på att beräkna vinnare för lagpoäng istället för spelarpoäng fungerar inte. Frontend visar spelarvinst oavsett om spelaren tillhör vinnande eller förlorande lag. Inget lag deklareras som vinnare.
+
+- [ ] Poänggrafvyn borde starta på Runda 0 (start) så att man alltid får ut en graf, även vid ett spel med enbart en runda. För tillfället får man bara en prick på y-axeln, tror det kan bli snyggare om det alltid blir en linje mellan runda 0 (start) och runda 1 (avslut). Det blir ett bättre helhetsintryck när den komponenten ser lika ut oavsett om det är en runda eller fjorton rundor.
 
 ### Styling
 - [X] Checkbox och rubriken för inställningarna "Endast jag kan redigera" och "Lagvinnare" bör vara på samma nivå horisontellt. Rubrikerna bör vara fetmarkerade (eller ha en högre visuell hierarki). Texten under bör vara "gråare" och ha en lägre visuell hierarki samt vara placerade under checkbox & rubrik.

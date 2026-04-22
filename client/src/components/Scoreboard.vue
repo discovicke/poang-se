@@ -20,15 +20,15 @@ defineProps<{
 
     <div v-if="scoreboard.length" class="scoreboard-kinetic">
       <!-- Leader Card (1st Place) -->
-      <div 
-        v-if="scoreboard[0]" 
+      <div
+        v-if="scoreboard[0]"
         class="leader-card group leader-glow"
-        :class="{ 'is-winner': winnerId === scoreboard[0].playerId }"
+        :class="{ 'is-winner': winnerId === scoreboard[0].rowId }"
       >
         <div class="leader-icon-bg">
           <span class="material-symbols-outlined">emoji_events</span>
         </div>
-        
+
         <div class="leader-content">
           <div class="leader-badge-row">
             <span class="badge-leader">Leader</span>
@@ -46,9 +46,9 @@ defineProps<{
 
       <!-- Rank 2 & 3 (Grid) -->
       <div v-if="scoreboard.length > 1" class="rank-secondary-grid mt-lg">
-        <div 
-          v-for="(s, i) in scoreboard.slice(1, 3)" 
-          :key="s.playerId"
+        <div
+          v-for="(s, i) in scoreboard.slice(1, 3)"
+          :key="s.rowId"
           class="rank-card"
           :class="i === 0 ? 'rank-2' : 'rank-3'"
         >
@@ -66,9 +66,9 @@ defineProps<{
 
       <!-- Rank 4+ (Rows) -->
       <div v-if="scoreboard.length > 3" class="rank-list mt-lg">
-        <div 
-          v-for="(s, i) in scoreboard.slice(3)" 
-          :key="s.playerId"
+        <div
+          v-for="(s, i) in scoreboard.slice(3)"
+          :key="s.rowId"
           class="rank-row"
         >
           <div class="row-info">
@@ -82,7 +82,7 @@ defineProps<{
         </div>
       </div>
     </div>
-    
+
     <div v-else class="empty-state glass-card">
       <span class="material-symbols-outlined">leaderboard</span>
       <p class="label-sm italic text-on-surface-variant">Inga poäng registrerade ännu.</p>
