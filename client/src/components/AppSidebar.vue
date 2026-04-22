@@ -3,8 +3,8 @@
 <template>
   <aside class="app-sidebar">
     <div class="sidebar-header">
-      <h1 class="logo">Poängtavlan</h1>
-      <p class="version">Kinetic Gallery v1.0</p>
+      <h1 class="logo">Poäng.se</h1>
+      <p class="version">Poängräkning för de viktigaste tillfällena</p>
     </div>
 
     <nav class="sidebar-nav">
