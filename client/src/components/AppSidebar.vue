@@ -3,7 +3,7 @@
 <template>
   <aside class="app-sidebar">
     <div class="sidebar-header">
-      <h1 class="logo">Poäng.se</h1>
+      <router-link to="/" class="logo">Poäng.se</router-link>
       <p class="version">Poängräkning för de viktigaste tillfällena</p>
     </div>
 
@@ -61,6 +61,8 @@
   font-size: 24px;
   letter-spacing: -0.05em;
   text-transform: uppercase;
+  text-decoration: none;
+  display: block;
 }
 
 .version {
