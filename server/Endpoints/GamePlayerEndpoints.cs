@@ -11,11 +11,10 @@ public static class GamePlayerEndpoints
 {
     public static WebApplication MapGamePlayerEndpoints(this WebApplication app)
     {
-        var tokenLink = app.Services.GetRequiredService<CancellationManager.TokenLinker>();
 
-        app.MapPost("/api/games/{id:guid}/teams", async (Guid id, AddTeamDto dto, GamePlayerService svc, CancellationToken requestCt) =>
+        app.MapPost("/api/games/{id:guid}/teams", async (Guid id, AddTeamDto dto, GamePlayerService svc, CancellationToken ct) =>
             {
-                using var ct = tokenLink.Link(requestCt);
+
                 var team = new Team { Id = Guid.NewGuid(), GameId = id, Name = dto.Name };
                 await svc.AddTeam(team, ct);
                 return Results.Created($"/games/{id}/teams/{team.Id}", new { team.Id, team.Name });
@@ -24,9 +23,9 @@ public static class GamePlayerEndpoints
             .WithTags("Spelare & Lag");
 
         app.MapPut("/api/games/{id:guid}/teams/{teamId:guid}/rename",
-                async (Guid id, Guid teamId, RenameDto dto, GamePlayerService svc, CancellationToken requestCt) =>
+                async (Guid id, Guid teamId, RenameDto dto, GamePlayerService svc, CancellationToken ct) =>
                 {
-                    using var ct = tokenLink.Link(requestCt);
+
                     if (string.IsNullOrWhiteSpace(dto.Name))
                         return Results.BadRequest("Namn saknas");
                     return await svc.RenameTeam(id, teamId, dto.Name)
@@ -36,9 +35,9 @@ public static class GamePlayerEndpoints
             .WithSummary("Byt namn på lag")
             .WithTags("Spelare & Lag");
 
-        app.MapDelete("/api/games/{id:guid}/teams/{teamId:guid}", async (Guid id, Guid teamId, GamePlayerService svc, CancellationToken requestCt) =>
+        app.MapDelete("/api/games/{id:guid}/teams/{teamId:guid}", async (Guid id, Guid teamId, GamePlayerService svc, CancellationToken ct) =>
             {
-                using var ct = tokenLink.Link(requestCt);
+
                 return await svc.RemoveTeam(id, teamId, ct)
                     ? Results.NoContent()
                     : Results.NotFound();
@@ -46,9 +45,9 @@ public static class GamePlayerEndpoints
             .WithSummary("Ta bort lag")
             .WithTags("Spelare & Lag");
 
-        app.MapPost("/api/games/{id:guid}/players", async (Guid id, AddPlayerToGameDto dto, GamePlayerService svc, CancellationToken requestCt) =>
+        app.MapPost("/api/games/{id:guid}/players", async (Guid id, AddPlayerToGameDto dto, GamePlayerService svc, CancellationToken ct) =>
             {
-                using var ct = tokenLink.Link(requestCt);
+
                 var gp = new GamePlayer
                 { GameId = id, PlayerId = dto.PlayerId, TeamId = dto.TeamId, JoinedAt = DateTime.UtcNow };
                 var result = await svc.AddPlayerToGame(gp, ct);
@@ -60,9 +59,9 @@ public static class GamePlayerEndpoints
             .WithTags("Spelare & Lag");
 
         app.MapPost("/api/games/{id:guid}/players/new",
-                async (Guid id, CreatePlayerForGameDto dto, GamePlayerService svc, CancellationToken requestCt) =>
+                async (Guid id, CreatePlayerForGameDto dto, GamePlayerService svc, CancellationToken ct) =>
                 {
-                    using var ct = tokenLink.Link(requestCt);
+
                     if (string.IsNullOrWhiteSpace(dto.UserName))
                         return Results.BadRequest("UserName krävs");
 
@@ -80,9 +79,9 @@ public static class GamePlayerEndpoints
             .WithTags("Spelare & Lag");
 
         app.MapPut("/api/games/{id:guid}/players/team",
-                async (Guid id, AssignPlayerToTeamDto dto, GamePlayerService svc, CancellationToken requestCt) =>
+                async (Guid id, AssignPlayerToTeamDto dto, GamePlayerService svc, CancellationToken ct) =>
                 {
-                    using var ct = tokenLink.Link(requestCt);
+
                     var result = await svc.AssignPlayerToTeam(id, dto.PlayerId, dto.TeamId, ct);
                     return result is null
                         ? Results.NotFound()
@@ -104,9 +103,8 @@ public static class GamePlayerEndpoints
             .WithTags("Spelare & Lag");
 
         app.MapDelete("/api/games/{id:guid}/players/{playerId:guid}",
-                async (Guid id, Guid playerId, GamePlayerService svc, CancellationToken requestCt) =>
+                async (Guid id, Guid playerId, GamePlayerService svc, CancellationToken ct) =>
                 {
-                    using var ct = tokenLink.Link(requestCt);
                     return await svc.RemovePlayerFromGame(id, playerId, ct)
                         ? Results.NoContent()
                         : Results.NotFound();
