@@ -58,9 +58,11 @@ export interface ClaimInfo {
 }
 
 export interface ScoreboardRow {
+  rowId: string
   playerId: string
   name: string
   teamName: string | null
+  memberNames?: string[]
   total: number
   displayTotal: number
 }

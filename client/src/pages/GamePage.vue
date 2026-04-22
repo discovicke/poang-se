@@ -1,11 +1,11 @@
 ﻿<script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
-import type { Game } from '../types/game'
-import { useRouter } from 'vue-router'
+import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
+import type {Game} from '../types/game'
+import {useRouter} from 'vue-router'
 
-import { useGameApi } from '../composables/useGameApi'
-import { useSignalR } from '../composables/useSignalR'
-import { useGameState } from '../composables/useGameState'
+import {useGameApi} from '../composables/useGameApi'
+import {useSignalR} from '../composables/useSignalR'
+import {useGameState} from '../composables/useGameState'
 
 import PageNotFound from './PageNotFound.vue'
 import ClaimPicker from '../components/ClaimPicker.vue'
@@ -61,6 +61,16 @@ async function onAssignTeam(playerId: string, teamId: string | null) {
 
 async function onRemovePlayer(playerId: string) {
   const g = await api.removePlayer(playerId)
+  if (g) game.value = g
+}
+
+async function onRenamePlayer(playerId: string, name: string) {
+  const g = await api.renamePlayer(playerId, name)
+  if (g) game.value = g
+}
+
+async function onRenameTeam(teamId: string, name: string) {
+  const g = await api.renameTeam(teamId, name)
   if (g) game.value = g
 }
 
@@ -124,13 +134,13 @@ async function onUpdateScore(playerId: string, round: number, newValue: number) 
 
 function canEditPlayer(playerId: string): boolean {
   if (!game.value) return false
-  
+
   // Spelskaparen kan redigera alla
   if (state.isCreator.value) return true
-  
+
   // Om spelet inte är låst till creatorOnly, kan jag redigera MIN spelare
   if (!game.value.creatorOnly && hub.claim.value?.playerId === playerId) return true
-  
+
   return false
 }
 
@@ -216,7 +226,7 @@ onBeforeUnmount(async () => {
         <span class="material-symbols-outlined locked-icon">lock</span>
         <h2 class="headline-md">{{ api.lockedGameName.value || 'Privat match' }}</h2>
         <p class="body-md text-on-surface-variant">Den här matchen är lösenordsskyddad.</p>
-        
+
         <form @submit.prevent="onUnlock" class="unlock-form">
           <input
             v-model="unlockPassword"
@@ -232,25 +242,39 @@ onBeforeUnmount(async () => {
       </div>
     </div>
 
-    <PageNotFound v-else-if="!game" />
+    <PageNotFound v-else-if="!game"/>
 
     <template v-else>
       <main class="game-container">
         <!-- Main Content (Scoreboard & Matrix) -->
         <div class="main-content">
-          <div class="content-header md-only">
+          <div class="content-header">
             <div>
               <span class="label-sm text-on-surface-variant">Pågående Match</span>
               <h2 class="headline-md text-primary">{{ game.name }}</h2>
             </div>
             <div class="header-actions">
-              <button class="icon-btn" @click="shareLink" title="Dela"><span class="material-symbols-outlined">share</span> Dela spel</button>
+              <button class="icon-btn" @click="shareLink" title="Dela"><span
+                class="material-symbols-outlined">share</span> Dela spel
+              </button>
             </div>
           </div>
 
           <div class="scoreboard-grid">
             <!-- Left Column: Core Gameplay -->
             <div class="score-column">
+              <!-- Mobile ClaimPicker (hidden on desktop where sidebar handles it) -->
+              <div class="mobile-claim mobile-only">
+                <ClaimPicker
+                  :players="game.players"
+                  :can-switch-claim="canSwitchClaim"
+                  :claim="hub.claim.value"
+                  :show-picker="hub.showClaimPicker.value"
+                  :connection-id="hub.connection.value?.connectionId ?? null"
+                  @claim="onClaim"
+                  @unclaim="onUnclaim"
+                />
+              </div>
               <!-- Show Lobby if Waiting -->
               <div v-if="game.status === 'Waiting'" class="mt-lg">
                 <GameLobby
@@ -262,6 +286,8 @@ onBeforeUnmount(async () => {
                   @add-player="onAddPlayer"
                   @assign-team="onAssignTeam"
                   @remove-player="onRemovePlayer"
+                  @rename-player="onRenamePlayer"
+                  @rename-team="onRenameTeam"
                   @start="onStart"
                   @share="shareLink"
                 />
@@ -295,9 +321,9 @@ onBeforeUnmount(async () => {
                     @update="onUpdateScore"
                   />
                 </div>
-                
+
                 <div v-if="game.status === 'Finished'" class="mt-xl">
-                  <ScoreCharts :gameId="game.id" />
+                  <ScoreCharts :gameId="game.id" :starting-score="game.startingScore" />
                 </div>
               </template>
             </div>
@@ -362,62 +388,293 @@ onBeforeUnmount(async () => {
 </template>
 
 <style scoped>
-.game-page { min-height: calc(100vh - 72px); background-color: var(--color-surface); }
-.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; gap: 16px; }
+.game-page {
+  min-height: calc(100vh - 72px);
+  background-color: var(--color-surface);
+}
 
-.loader { width: 48px; height: 48px; border: 4px solid var(--color-surface-container-high); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 16px;
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--color-surface-container-high);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* Locked State */
-.locked-container { display: flex; align-items: center; justify-content: center; padding: 48px 24px; }
-.locked-card { max-width: 480px; width: 100%; padding: 48px; text-align: center; display: flex; flex-direction: column; gap: 24px; }
-.locked-icon { font-size: 64px; color: var(--color-primary); margin-bottom: 8px; }
-.unlock-form { display: flex; flex-direction: column; gap: 16px; }
-.primary-input { background-color: var(--color-surface-container-high); border: none; border-radius: var(--radius-xl); padding: 16px 24px; color: var(--color-on-surface); font-size: 18px; text-align: center; }
-.submit-btn { background-color: var(--color-primary); color: var(--color-on-primary-fixed); border: none; border-radius: var(--radius-xl); padding: 16px; font-weight: 700; cursor: pointer; transition: all 200ms; }
-.submit-btn:hover { box-shadow: 0 0 20px rgba(132, 173, 255, 0.3); }
+.locked-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.locked-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 48px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.locked-icon {
+  font-size: 64px;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.unlock-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.primary-input {
+  background-color: var(--color-surface-container-high);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 16px 24px;
+  color: var(--color-on-surface);
+  font-size: 18px;
+  text-align: center;
+}
+
+.submit-btn {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary-fixed);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.submit-btn:hover {
+  box-shadow: 0 0 20px rgba(132, 173, 255, 0.3);
+}
 
 /* Main Layout */
-.game-container { padding: 24px; }
-@media (min-width: 768px) { .game-container { padding: 48px; } }
-.main-content { max-width: 1400px; margin: 0 auto; }
-.content-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-.header-actions { display: flex; gap: 8px; }
-.icon-btn { background: transparent; border: none; color: var(--color-on-surface-variant); padding: 8px; border-radius: var(--radius-full); cursor: pointer; transition: all 200ms; }
-.icon-btn:hover { background-color: var(--color-surface-container-high); color: var(--color-primary); }
-.icon-btn:active { transform: scale(0.9); opacity: 0.7; }
-.scoreboard-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
-@media (min-width: 1024px) { .scoreboard-grid { grid-template-columns: 8fr 4fr; } }
+.game-container {
+  padding: 24px;
+}
+
+@media (min-width: 768px) {
+  .game-container {
+    padding: 48px;
+  }
+}
+
+.main-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 32px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-on-surface-variant);
+  padding: 8px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.icon-btn:hover {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-primary);
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+  opacity: 0.7;
+}
+
+.scoreboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+
+@media (min-width: 1024px) {
+  .scoreboard-grid {
+    grid-template-columns: 8fr 4fr;
+  }
+}
 
 /* Management Column */
-.status-card { padding: 24px; }
-.atmospheric-image { position: relative; height: 200px; border-radius: var(--radius-xl); overflow: hidden; }
-.atmospheric-image img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1); transition: filter 500ms; }
-.atmospheric-image:hover img { filter: grayscale(0); }
-.img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, var(--color-background), transparent); padding: 24px; display: flex; flex-direction: column; justify-content: flex-end; }
+.status-card {
+  padding: 24px;
+}
+
+.atmospheric-image {
+  position: relative;
+  height: 200px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.atmospheric-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+  transition: filter 500ms;
+}
+
+.atmospheric-image:hover img {
+  filter: grayscale(0);
+}
+
+.img-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, var(--color-background), transparent);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
 
 /* Buttons */
-.primary-btn { background-color: var(--color-primary); color: var(--color-on-primary-fixed); border: none; padding: 16px; border-radius: var(--radius-xl); font-weight: 700; cursor: pointer; }
-.secondary-btn { background: transparent; border: 1px solid var(--color-outline-variant); color: var(--color-on-surface); padding: 16px; border-radius: var(--radius-xl); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.secondary-btn:hover { background-color: var(--color-surface-container-high); }
+.primary-btn {
+  background-color: var(--color-primary);
+  color: var(--color-on-primary-fixed);
+  border: none;
+  padding: 16px;
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background: transparent;
+  border: 1px solid var(--color-outline-variant);
+  color: var(--color-on-surface);
+  padding: 16px;
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.secondary-btn:hover {
+  background-color: var(--color-surface-container-high);
+}
 
 /* Mobile FAB */
-.mobile-controls { position: fixed; bottom: 88px; right: 24px; z-index: 100; }
-.fab-main { width: 64px; height: 64px; border-radius: 50%; background-color: var(--color-primary); color: var(--color-on-primary-fixed); border: none; box-shadow: 0 0 40px rgba(132, 173, 255, 0.4); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.fab-main span { font-size: 32px; }
+.mobile-controls {
+  position: fixed;
+  bottom: 88px;
+  right: 24px;
+  z-index: 100;
+}
+
+.fab-main {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-on-primary-fixed);
+  border: none;
+  box-shadow: 0 0 40px rgba(132, 173, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.fab-main span {
+  font-size: 32px;
+}
 
 /* Utils */
-.text-primary { color: var(--color-primary); }
-.text-secondary { color: var(--color-secondary); }
-.mb-md { margin-bottom: 16px; }
-.mt-lg { margin-top: 24px; }
-.mt-xl { margin-top: 32px; }
-.w-full { width: 100%; }
-.flex-col { display: flex; flex-direction: column; }
-.gap-sm { gap: 8px; }
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-secondary {
+  color: var(--color-secondary);
+}
+
+.mb-md {
+  margin-bottom: 16px;
+}
+
+.mt-lg {
+  margin-top: 24px;
+}
+
+.mt-xl {
+  margin-top: 32px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-sm {
+  gap: 8px;
+}
 
 /* Visibility Utilities */
-.mobile-only { display: block; }
-.md-only { display: none; }
-@media (min-width: 768px) { .mobile-only { display: none; } .md-only { display: block; } }
+.mobile-only {
+  display: block;
+}
+
+.md-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+
+  .md-only {
+    display: block;
+  }
+}
+
+.mobile-claim {
+  margin-bottom: 24px;
+}
 </style>

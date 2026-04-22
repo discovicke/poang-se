@@ -73,10 +73,38 @@ export function useGameState(game: Ref<Game | null>, gameId: string) {
       : raw
   }
 
-  /** Sorterade rader i scoreboard. */
+  /** Sorterade rader i scoreboard. Team-aggregerat när teamBasedWinner är satt. */
   const scoreboard = computed<ScoreboardRow[]>(() => {
     if (!game.value) return []
+
+    if (game.value.teamBasedWinner && game.value.teams.length > 0) {
+      // Aggregera poäng per lag
+      const rows: ScoreboardRow[] = game.value.teams.map(team => {
+        const teamPlayers = game.value!.players.filter(p => p.teamId === team.id)
+        const raw = teamPlayers.reduce((sum, p) => sum + playerRawTotal(p.playerId), 0)
+        const start = game.value!.startingScore ?? 0
+        const displayTotal = start !== 0 ? start - raw : raw
+        return {
+          rowId: team.id,
+          playerId: team.id,
+          name: team.name,
+          teamName: null,
+          memberNames: teamPlayers.map(p => p.playerName),
+          total: raw,
+          displayTotal,
+        }
+      })
+      rows.sort((a, b) =>
+        game.value!.lowerIsBetter
+          ? a.displayTotal - b.displayTotal
+          : b.displayTotal - a.displayTotal,
+      )
+      return rows
+    }
+
+    // Per-spelare (standard)
     const arr: ScoreboardRow[] = game.value.players.map(p => ({
+      rowId: p.playerId,
       playerId: p.playerId,
       name: p.playerName,
       teamName: p.teamName,
