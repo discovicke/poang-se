@@ -323,7 +323,7 @@ onBeforeUnmount(async () => {
                 </div>
 
                 <div v-if="game.status === 'Finished'" class="mt-xl">
-                  <ScoreCharts :gameId="game.id"/>
+                  <ScoreCharts :gameId="game.id" :starting-score="game.startingScore" />
                 </div>
               </template>
             </div>

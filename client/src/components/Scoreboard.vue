@@ -35,7 +35,11 @@ defineProps<{
             <span class="label-sm text-secondary">1:a Placering</span>
           </div>
           <h3 class="headline-lg text-on-surface">{{ scoreboard[0].name }}</h3>
-          <p v-if="hasTeams" class="label-sm text-on-surface-variant mt-sm">Lag: {{ scoreboard[0].teamName || '–' }}</p>
+          <p v-if="scoreboard[0].memberNames?.length" class="member-names mt-sm">
+            <span class="material-symbols-outlined member-icon">group</span>
+            {{ scoreboard[0].memberNames.join(' · ') }}
+          </p>
+          <p v-else-if="hasTeams" class="label-sm text-on-surface-variant mt-sm">Lag: {{ scoreboard[0].teamName || '–' }}</p>
         </div>
 
         <div class="leader-score">
@@ -55,7 +59,8 @@ defineProps<{
           <div class="rank-info">
             <span class="rank-number headline-sm">{{ i === 0 ? '2:a' : '3:e' }}</span>
             <h4 class="headline-sm text-on-surface mt-xs">{{ s.name }}</h4>
-            <p v-if="hasTeams" class="label-xs text-on-surface-variant">{{ s.teamName || '–' }}</p>
+            <p v-if="s.memberNames?.length" class="member-names-sm">{{ s.memberNames.join(' · ') }}</p>
+            <p v-else-if="hasTeams" class="label-xs text-on-surface-variant">{{ s.teamName || '–' }}</p>
           </div>
           <div class="rank-score">
             <span class="headline-lg text-on-surface-variant">{{ s.displayTotal }}</span>
@@ -74,7 +79,8 @@ defineProps<{
           <div class="row-info">
             <span class="row-number headline-sm text-outline">{{ i + 4 }}</span>
             <span class="headline-sm text-on-surface">{{ s.name }}</span>
-            <span v-if="hasTeams" class="label-xs text-on-surface-variant ml-md">({{ s.teamName || '–' }})</span>
+            <span v-if="s.memberNames?.length" class="label-xs text-on-surface-variant ml-md">{{ s.memberNames.join(' · ') }}</span>
+            <span v-else-if="hasTeams" class="label-xs text-on-surface-variant ml-md">({{ s.teamName || '–' }})</span>
           </div>
           <div class="row-score">
             <span class="headline-sm text-on-surface-variant">{{ s.displayTotal }}</span>
@@ -250,4 +256,25 @@ defineProps<{
 .mt-lg { margin-top: 24px; }
 .mt-xs { margin-top: 4px; }
 .ml-md { margin-left: 16px; }
+
+.member-names {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+}
+
+.member-icon {
+  font-size: 16px;
+  color: var(--color-on-surface-variant);
+}
+
+.member-names-sm {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-on-surface-variant);
+  margin-top: 4px;
+}
 </style>

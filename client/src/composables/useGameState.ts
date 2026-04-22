@@ -89,6 +89,7 @@ export function useGameState(game: Ref<Game | null>, gameId: string) {
           playerId: team.id,
           name: team.name,
           teamName: null,
+          memberNames: teamPlayers.map(p => p.playerName),
           total: raw,
           displayTotal,
         }

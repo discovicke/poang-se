@@ -58,10 +58,11 @@ export interface ClaimInfo {
 }
 
 export interface ScoreboardRow {
-  rowId: string        // playerId or teamId — the canonical identifier for winner comparison
-  playerId: string     // same as rowId in player mode; team id in team mode (kept for compat)
+  rowId: string
+  playerId: string
   name: string
   teamName: string | null
+  memberNames?: string[]
   total: number
   displayTotal: number
 }
