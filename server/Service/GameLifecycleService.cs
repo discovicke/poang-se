@@ -3,44 +3,47 @@ using Microsoft.EntityFrameworkCore;
 using server.Dtos;
 using server.Hubs;
 using server.Models;
-
+using server.Helpers;
 namespace server.Service;
 
 /// <summary>
 /// Hanterar spelets livscykel: CRUD, statusövergångar (start/paus/finish),
 /// reset, rematch, avancera runda och inställningar.
 /// </summary>
-public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, GameScoringService scoring)
+public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, GameScoringService scoring, CancellationManager.TokenLinker tokenLinker)
 {
     /// <summary>Returnerar alla spel sorterade med senast skapade först.</summary>
-    public async Task<List<Game>> GetAllGames()
+    public async Task<List<Game>> GetAllGames(CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         return await db.Games
             .Where(g => g.ExpiresAt == null || g.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(g => g.CreatedAt)
-            .ToListAsync();
+            .ToListAsync(ct);
     }
 
     /// <summary>
     /// Hämtar ett spel med fullständiga includes: lag, spelare (med spelarentitet och lag)
     /// samt poäng (med spelarentitet).
     /// </summary>
-    public async Task<Game?> GetGameById(Guid id)
+    public async Task<Game?> GetGameById(Guid id, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         return await db.Games
             .Include(g => g.Teams)
             .Include(g => g.GamePlayers).ThenInclude(gp => gp.Player)
             .Include(g => g.GamePlayers).ThenInclude(gp => gp.Team)
             .Include(g => g.Scores).ThenInclude(s => s.Player)
             .FirstOrDefaultAsync(g => g.Id == id &&
-                (g.ExpiresAt == null || g.ExpiresAt > DateTime.UtcNow));
+                (g.ExpiresAt == null || g.ExpiresAt > DateTime.UtcNow), ct);
     }
 
     /// <summary>Sparar ett nytt spel i databasen och returnerar det.</summary>
-    public async Task<Game> CreateGame(Game game)
+    public async Task<Game> CreateGame(Game game, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         db.Games.Add(game);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         return game;
     }
 
@@ -48,8 +51,9 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
     /// Uppdaterar lobbyinställningar för ett spel om anroparen är creator
     /// och spelet fortfarande är i <c>Waiting</c>-status.
     /// </summary>
-    public async Task<Game?> UpdateSettings(Guid gameId, UpdateGameSettingsDto dto, Guid creatorSecret)
+    public async Task<Game?> UpdateSettings(Guid gameId, UpdateGameSettingsDto dto, Guid creatorSecret, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         var game = await db.Games.FindAsync(gameId);
         if (game == null)
             return null;
@@ -75,36 +79,38 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         if (dto.GameModeTarget != null)
             game.GameModeTarget = dto.GameModeTarget;
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
         return game;
     }
 
     /// <summary>Startar spelet (status → Active, CurrentRound = 1).</summary>
-    public async Task<Game?> StartGame(Guid id)
+    public async Task<Game?> StartGame(Guid id, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         var game = await db.Games
             .Include(g => g.GamePlayers)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id, ct);
         if (game == null)
             return null;
 
         game.Status = GameStatus.Active;
         game.CurrentRound = 1;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
         return game;
     }
 
     /// <summary>Pausar ett aktivt spel (status → Waiting).</summary>
-    public async Task<Game?> PauseGame(Guid id)
+    public async Task<Game?> PauseGame(Guid id, CancellationToken requestCt = default)
     {
-        var game = await db.Games.FindAsync(id);
+        using var ct = tokenLinker.Link(requestCt);
+        var game = await db.Games.FindAsync(id, ct);
         if (game == null || game.Status != GameStatus.Active)
             return null;
 
         game.Status = GameStatus.Waiting;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
         return game;
     }
@@ -112,11 +118,12 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
     /// <summary>
     /// Ökar CurrentRound med ett steg. Kontrollerar rundbaserade vinstvillkor efter avslutad runda.
     /// </summary>
-    public async Task<Game?> AdvanceRound(Guid id)
+    public async Task<Game?> AdvanceRound(Guid id, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         var game = await db.Games
             .Include(g => g.Scores)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id, ct);
         if (game is not { Status: GameStatus.Active })
             return null;
 
@@ -142,21 +149,22 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         }
 
         game.CurrentRound++;
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
 
-        await scoring.CheckRoundBasedWin(id);
+        await scoring.CheckRoundBasedWin(id, ct);
         return game;
     }
 
     /// <summary>Avslutar spelet, beräknar vinnare och notifierar gruppen.</summary>
-    public async Task<Game?> FinishGame(Guid id)
+    public async Task<Game?> FinishGame(Guid id, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         var game = await db.Games
             .Include(g => g.Scores)
             .Include(g => g.GamePlayers)
             .Include(g => g.Teams)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id, ct);
         if (game == null)
             return null;
 
@@ -164,19 +172,20 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         game.FinishedAt = DateTime.UtcNow;
         game.WinnerId = scoring.CalculateWinnerId(game);
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
         return game;
     }
 
     /// <summary>Återställer ett spel till Waiting. Alla poäng raderas.</summary>
-    public async Task<Game?> ResetGame(Guid id, Guid creatorSecret)
+    public async Task<Game?> ResetGame(Guid id, Guid creatorSecret, CancellationToken requestCt = default)
     {
+        using var ct = tokenLinker.Link(requestCt);
         var game = await db.Games
             .Include(g => g.Scores)
             .Include(g => g.GamePlayers)
             .Include(g => g.Teams)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id, ct);
 
         if (game == null || game.CreatorSecret != creatorSecret)
             return null;
@@ -187,18 +196,18 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         game.WinnerId = null;
         game.FinishedAt = null;
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
         return game;
     }
 
     /// <summary>Skapar en ny match baserad på en befintlig: samma inställningar, lag och spelare.</summary>
-    public async Task<Game?> RematchGame(Guid id, Guid creatorSecret)
+    public async Task<Game?> RematchGame(Guid id, Guid creatorSecret, CancellationToken ct = default)
     {
         var original = await db.Games
             .Include(g => g.Teams)
             .Include(g => g.GamePlayers)
-            .FirstOrDefaultAsync(g => g.Id == id);
+            .FirstOrDefaultAsync(g => g.Id == id, ct);
 
         if (original == null || original.CreatorSecret != creatorSecret)
             return null;
@@ -246,19 +255,19 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
             });
         }
 
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         return newGame;
     }
 
     /// <summary>Tar bort alla spel vars ExpiresAt har passerat.</summary>
-    public async Task<int> RemoveExpiredGames()
+    public async Task<int> RemoveExpiredGames(CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
         var expired = await db.Games
             .Where(g => g.ExpiresAt != null && g.ExpiresAt <= now)
-            .ToListAsync();
+            .ToListAsync(ct);
         db.Games.RemoveRange(expired);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(ct);
         return expired.Count;
     }
 }

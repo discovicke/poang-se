@@ -13,18 +13,22 @@ public static class GameLifecycleEndpoints
 {
     public static WebApplication MapGameLifecycleEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/games", async (GameLifecycleService svc) =>
+        var tokenLink = app.Services.GetRequiredService<CancellationManager.TokenLinker>();
+
+        app.MapGet("/api/games", async (GameLifecycleService svc, CancellationToken requestCt) =>
             {
-                await svc.RemoveExpiredGames();
-                var games = await svc.GetAllGames();
+                using var ct = tokenLink.Link(requestCt);
+                await svc.RemoveExpiredGames(ct);
+                var games = await svc.GetAllGames(ct);
                 return Results.Ok(games.Select(g => g.ToListResponse()));
             })
             .WithSummary("Lista alla spel")
             .WithTags("Spel");
 
-        app.MapGet("/api/games/{id:guid}", async (Guid id, GameLifecycleService svc, HttpContext ctx) =>
+        app.MapGet("/api/games/{id:guid}", async (Guid id, GameLifecycleService svc, HttpContext ctx, CancellationToken requestCt) =>
             {
-                var game = await svc.GetGameById(id);
+                using var ct = tokenLink.Link(requestCt);
+                var game = await svc.GetGameById(id, ct);
                 if (game is null)
                     return Results.NotFound();
                 if (game.IsPrivate && !IsAuthorized(ctx, id))
@@ -34,9 +38,10 @@ public static class GameLifecycleEndpoints
             .WithSummary("Hämta speldetalj")
             .WithTags("Spel");
 
-        app.MapPost("/api/games/{id:guid}/unlock", async (Guid id, UnlockGameDto dto, GameLifecycleService svc) =>
+        app.MapPost("/api/games/{id:guid}/unlock", async (Guid id, UnlockGameDto dto, GameLifecycleService svc, CancellationToken requestCt) =>
             {
-                var game = await svc.GetGameById(id);
+                using var ct = tokenLink.Link(requestCt);
+                var game = await svc.GetGameById(id, ct);
                 if (game is null)
                     return Results.NotFound();
                 if (!game.IsPrivate)
@@ -48,22 +53,24 @@ public static class GameLifecycleEndpoints
             .WithSummary("Lås upp lösenordsskyddad match")
             .WithTags("Spel");
 
-        app.MapPost("/api/games", async (CreateGameDto dto, GameLifecycleService svc) =>
+        app.MapPost("/api/games", async (CreateGameDto dto, GameLifecycleService svc, CancellationToken requestCt) =>
             {
+                using var ct = tokenLink.Link(requestCt);
                 var game = GameFromDto(dto);
-                await svc.CreateGame(game);
+                await svc.CreateGame(game, ct);
                 return Results.Created($"/games/{game.Id}", game.ToCreatedResponse());
             })
             .WithSummary("Skapa nytt spel")
             .WithTags("Spel");
 
         app.MapPut("/api/games/{id:guid}/settings",
-                async (Guid id, UpdateGameSettingsDto dto, HttpContext ctx, GameLifecycleService svc) =>
+                async (Guid id, UpdateGameSettingsDto dto, HttpContext ctx, GameLifecycleService svc, CancellationToken requestCt) =>
                 {
                     var secretStr = ctx.Request.Headers["X-Creator-Secret"].ToString();
                     if (!Guid.TryParse(secretStr, out var secret))
                         return Results.Unauthorized();
-                    var game = await svc.UpdateSettings(id, dto, secret);
+                    using var ct = tokenLink.Link(requestCt);
+                    var game = await svc.UpdateSettings(id, dto, secret, ct);
                     return game is null
                         ? Results.NotFound()
                         : Results.Ok(game.ToStatusResponse());
@@ -71,9 +78,10 @@ public static class GameLifecycleEndpoints
             .WithSummary("Uppdatera lobbyinställningar")
             .WithTags("Spel");
 
-        app.MapPut("/api/games/{id:guid}/start", async (Guid id, GameLifecycleService svc) =>
+        app.MapPut("/api/games/{id:guid}/start", async (Guid id, GameLifecycleService svc, CancellationToken requestCt) =>
             {
-                var game = await svc.StartGame(id);
+                using var ct = tokenLink.Link(requestCt);
+                var game = await svc.StartGame(id, ct);
                 return game is null
                     ? Results.NotFound()
                     : Results.Ok(game.ToStatusResponse());
@@ -81,9 +89,10 @@ public static class GameLifecycleEndpoints
             .WithSummary("Starta spel")
             .WithTags("Spel");
 
-        app.MapPut("/api/games/{id:guid}/pause", async (Guid id, GameLifecycleService svc) =>
+        app.MapPut("/api/games/{id:guid}/pause", async (Guid id, GameLifecycleService svc, CancellationToken requestCt) =>
             {
-                var game = await svc.PauseGame(id);
+                using var ct = tokenLink.Link(requestCt);
+                var game = await svc.PauseGame(id, ct);
                 return game is null
                     ? Results.NotFound()
                     : Results.Ok(game.ToStatusResponse());
@@ -91,9 +100,10 @@ public static class GameLifecycleEndpoints
             .WithSummary("Pausa spel")
             .WithTags("Spel");
 
-        app.MapPut("/api/games/{id:guid}/advance-round", async (Guid id, GameLifecycleService svc) =>
+        app.MapPut("/api/games/{id:guid}/advance-round", async (Guid id, GameLifecycleService svc, CancellationToken requestCt) =>
             {
-                var game = await svc.AdvanceRound(id);
+                using var ct = tokenLink.Link(requestCt);
+                var game = await svc.AdvanceRound(id, ct);
                 return game is null
                     ? Results.NotFound()
                     : Results.Ok(new { game.Id, game.CurrentRound });
@@ -101,9 +111,10 @@ public static class GameLifecycleEndpoints
             .WithSummary("Avancera till nästa runda")
             .WithTags("Spel");
 
-        app.MapPut("/api/games/{id:guid}/finish", async (Guid id, GameLifecycleService svc) =>
+        app.MapPut("/api/games/{id:guid}/finish", async (Guid id, GameLifecycleService svc, CancellationToken requestCt) =>
             {
-                var game = await svc.FinishGame(id);
+                using var ct = tokenLink.Link(requestCt);
+                var game = await svc.FinishGame(id, ct);
                 return game is null
                     ? Results.NotFound()
                     : Results.Ok(game.ToFinishResponse());
@@ -111,12 +122,13 @@ public static class GameLifecycleEndpoints
             .WithSummary("Avsluta spel och beräkna vinnare")
             .WithTags("Spel");
 
-        app.MapPut("/api/games/{id:guid}/reset", async (Guid id, HttpContext ctx, GameLifecycleService svc) =>
+        app.MapPut("/api/games/{id:guid}/reset", async (Guid id, HttpContext ctx, GameLifecycleService svc, CancellationToken requestCt) =>
             {
+                using var ct = tokenLink.Link(requestCt);
                 var secretStr = ctx.Request.Headers["X-Creator-Secret"].ToString();
                 if (!Guid.TryParse(secretStr, out var secret))
                     return Results.Unauthorized();
-                var game = await svc.ResetGame(id, secret);
+                var game = await svc.ResetGame(id, secret, ct);
                 return game is null
                     ? Results.NotFound()
                     : Results.Ok(game.ToDetailResponse());
@@ -124,12 +136,13 @@ public static class GameLifecycleEndpoints
             .WithSummary("Starta om match (nollställ poäng)")
             .WithTags("Spel");
 
-        app.MapPost("/api/games/{id:guid}/rematch", async (Guid id, HttpContext ctx, GameLifecycleService svc) =>
+        app.MapPost("/api/games/{id:guid}/rematch", async (Guid id, HttpContext ctx, GameLifecycleService svc, CancellationToken requestCt) =>
             {
+                using var ct = tokenLink.Link(requestCt);
                 var secretStr = ctx.Request.Headers["X-Creator-Secret"].ToString();
                 if (!Guid.TryParse(secretStr, out var secret))
                     return Results.Unauthorized();
-                var newGame = await svc.RematchGame(id, secret);
+                var newGame = await svc.RematchGame(id, secret, ct);
                 return newGame is null
                     ? Results.NotFound()
                     : Results.Created($"/games/{newGame.Id}", newGame.ToCreatedResponse());
