@@ -136,7 +136,7 @@ const getPlayerColor = (index: number) => {
 .player-choice-card.is-taken {
   opacity: 0.4;
   cursor: not-allowed;
-  grayscale: 1;
+  filter: grayscale(1);
 }
 
 .avatar {

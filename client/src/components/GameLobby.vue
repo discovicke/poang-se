@@ -308,6 +308,7 @@ const canStart = computed(() => props.game.players.length >= 2)
   height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content:space-between;
 }
 
 .section-header {
