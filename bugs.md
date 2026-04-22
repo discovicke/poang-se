@@ -1,6 +1,6 @@
 # Buggar
 ### Matchrundor
-- [ ] Vid "först till X" så sätts rundor till 10 rundor, det bör rimligtvis bara skapas en runda och sedan plussa på extrarundor tills vinstvillkoret är uppnått.
+- [x] Vid "först till X" så sätts rundor till 10 rundor, det bör rimligtvis bara skapas en runda och sedan plussa på extrarundor tills vinstvillkoret är uppnått.
 - [ ] När man pausar ett spel och har avancerat rundor så startar man på runda 1 igen. Poängen är kvar men staten håller inte koll på vilken runda som det pausades på.
 
 ### Multiplayer
@@ -16,7 +16,7 @@
   - Anropen ser normala ut i webbläsarens Networkflik.
   - Jag tyckte också att serverns loggsystem såg normalt ut vid varje tillfället.
      
-- [ ] Poänggrafen ger felaktigt antal spelade rundor för en spelare och den spelaren har fått 0p någon runda.
+- [x] Poänggrafen ger felaktigt antal spelade rundor för en spelare och den spelaren har fått 0p någon runda.
   - Spelarens rundor med poäng sammanställs korrekt, men den hoppar över alla rundor utan poäng vilket ger intrycket att spelaren har spelat färre rundor än övriga spelare.
   - Grafen borde visa att spelarens graflinje är horisontellt rak (stagnerad poängutveckling) under de rundor som 0p är registrerade. Jag gissar att det är CumulativeValue-uträkningen i databasen och service-filen på servern som spökar till det för frontend.
 

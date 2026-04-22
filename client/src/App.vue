@@ -22,7 +22,7 @@ const route = useRoute()
       </main>
 
       <!-- Shared Footer -->
-      <AppFooter />
+      <!-- <AppFooter /> -->
     </div>
 
     <!-- Mobile Bottom Nav -->

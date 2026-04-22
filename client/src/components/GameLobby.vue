@@ -270,20 +270,20 @@ const canStart = computed(() => props.game.players.length >= 2)
             </div>
           </div>
         </div>
+        <div class="lobby-footer mt-xl">
+          <button 
+            v-if="isCreator" 
+            class="start-match-btn glow-primary" 
+            @click="emit('start')" 
+            :disabled="!canStart"
+          >
+            <span class="material-symbols-outlined">play_circle</span>
+            {{ game.currentRound > 1 ? 'FORTSÄTT MATCH' : 'STARTA MATCH' }}
+          </button>
+        </div>
       </div>
-
+      
       <!-- Action Footer -->
-      <div class="lobby-footer mt-xl">
-        <button 
-          v-if="isCreator" 
-          class="start-match-btn glow-primary" 
-          @click="emit('start')" 
-          :disabled="!canStart"
-        >
-          <span class="material-symbols-outlined">play_circle</span>
-          {{ game.currentRound > 1 ? 'FORTSÄTT MATCH' : 'STARTA MATCH' }}
-        </button>
-      </div>
     </section>
   </div>
 </template>
@@ -305,7 +305,7 @@ const canStart = computed(() => props.game.players.length >= 2)
 
 .glass-card {
   padding: 32px;
-  height: 90%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -509,7 +509,7 @@ const canStart = computed(() => props.game.players.length >= 2)
   border-radius: var(--radius-xl);
   padding: 24px;
   height: 64px;
-  margin: 0 auto;
+  
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 900;
   font-size: 20px;
