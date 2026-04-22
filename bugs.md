@@ -25,6 +25,8 @@
 
 - [X] Poänggrafvyn borde starta på Runda 0 (start) så att man alltid får ut en graf, även vid ett spel med enbart en runda. För tillfället får man bara en prick på y-axeln, tror det kan bli snyggare om det alltid blir en linje mellan runda 0 (start) och runda 1 (avslut). Det blir ett bättre helhetsintryck när den komponenten ser lika ut oavsett om det är en runda eller fjorton rundor.
 
+- [ ] Startpoäng går just nu inte att justera. Den återställer till 0.
+
 ### Styling
 - [X] Checkbox och rubriken för inställningarna "Endast jag kan redigera" och "Lagvinnare" bör vara på samma nivå horisontellt. Rubrikerna bör vara fetmarkerade (eller ha en högre visuell hierarki). Texten under bör vara "gråare" och ha en lägre visuell hierarki samt vara placerade under checkbox & rubrik.
 T.ex:
