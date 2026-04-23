@@ -1,18 +1,12 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import AppHeader from './components/AppHeader.vue'
-import AppSidebar from './components/AppSidebar.vue'
-import AppBottomNav from './components/AppBottomNav.vue'
-
 
 const route = useRoute()
 </script>
 
 <template>
   <div class="app-shell">
-    <!-- Desktop Sidebar -->
-    <AppSidebar class="md-only" />
-
     <div class="main-container">
       <!-- Shared Header -->
       <AppHeader />
@@ -24,7 +18,6 @@ const route = useRoute()
     </div>
 
     <!-- Mobile Bottom Nav -->
-    <AppBottomNav class="mobile-only" />
   </div>
 </template>
 

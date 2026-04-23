@@ -32,19 +32,16 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside))
 <template>
   <header class="app-header">
     <div class="header-left">
-      <template v-if="matchName">
-        <!-- Mobile: logo -->
-        <router-link to="/" class="logo mobile-only">Poäng.se</router-link>
-        <!-- Desktop: match info (sidebar has logo) -->
-        <div class="match-info desktop-only">
-          <span class="label-sm text-on-surface-variant">{{ matchContext || 'Pågående Match' }}</span>
-          <h2 class="headline-sm text-primary">{{ matchName }}</h2>
-        </div>
-      </template>
-      <template v-else>
-        <!-- Mobile: logo (no sidebar) -->
-        <router-link to="/" class="logo mobile-only">Poäng.se</router-link>
-      </template>
+      <div class="logo-block">
+        <router-link to="/" class="logo">
+          <span class="logo-main">POÄNG</span><span class="logo-suffix">.se</span>
+        </router-link>
+        <span class="tagline">Det roligaste är poängen</span>
+      </div>
+      <div v-if="matchName" class="match-info">
+        <span class="label-sm text-on-surface-variant">{{ matchContext || 'Pågående Match' }}</span>
+        <h2 class="headline-sm text-primary">{{ matchName }}</h2>
+      </div>
     </div>
 
     <div class="header-actions">
@@ -108,25 +105,51 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside))
   border-bottom: 1px solid var(--color-outline-variant);
 }
 
+.logo-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .logo {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 900;
   font-size: 24px;
-  color: var(--color-primary);
   letter-spacing: -0.05em;
   text-transform: uppercase;
   text-decoration: none;
+  line-height: 1;
+}
+
+.logo-main {
+  color: var(--color-primary-container);
+}
+
+.logo-suffix {
+  color: var(--color-secondary);
+}
+
+.tagline {
+  display: block;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
 }
 
 .match-info {
   display: flex;
   flex-direction: column;
+  padding-left: 24px;
+  border-left: 1px solid var(--color-outline-variant);
 }
 
 .header-actions {
@@ -299,11 +322,5 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside))
 .text-primary { color: var(--color-primary); }
 .text-on-surface-variant { color: var(--color-on-surface-variant); }
 
-.mobile-only { display: block; }
-.desktop-only { display: none; }
 
-@media (min-width: 1024px) {
-  .mobile-only { display: none; }
-  .desktop-only { display: flex; }
-}
 </style>

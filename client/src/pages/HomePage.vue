@@ -42,9 +42,11 @@ async function createGame() {
   <div class="home-page">
     <div class="container">
       <header class="page-header text-center">
-        <h1 class="display text-primary mb-md">POÄNG.se</h1>
+        <h1 class="display mb-md">
+          <span class="logo-main">POÄNG</span><span class="logo-suffix">.se</span>
+        </h1>
         <p class="body-lg text-on-surface-variant max-w-md mx-auto">
-          Starta en ny match på under 30 sekunder. Inget krångel, bara poäng.
+          Oense kring vem som vann förra gången? <br/> Den här gången kan ni bevisa det.
         </p>
       </header>
 
@@ -273,6 +275,18 @@ input:checked + .slider:before {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.logo-main {
+  color: var(--color-primary-container);
+}
+
+.logo-suffix {
+  color: var(--color-secondary);
+}
+
+.page-header {
+  margin-bottom: 56px;
 }
 
 .text-center {
