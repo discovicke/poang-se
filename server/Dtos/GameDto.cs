@@ -60,6 +60,7 @@ public class UpdateGameSettingsDto
 {
     public int? MaxRounds { get; set; }
     public double? ScoreIncrement { get; set; }
+    public double? StartingScore { get; set; }
     public bool? LowerIsBetter { get; set; }
     public bool? CreatorOnly { get; set; }
     public bool? TeamBasedWinner { get; set; }

@@ -78,6 +78,8 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
             game.GameModeValue = dto.GameModeValue.Value;
         if (dto.GameModeTarget != null)
             game.GameModeTarget = dto.GameModeTarget;
+        if (dto.StartingScore.HasValue)
+            game.StartingScore = dto.StartingScore.Value;
 
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");

@@ -60,6 +60,7 @@ export function useGameApi(gameId: string) {
       gameMode: string | null
       gameModeValue: number | null
       gameModeTarget: string
+      startingScore: number
     },
   ): Promise<Game | null> {
     await fetch(`${base}/settings`, {
