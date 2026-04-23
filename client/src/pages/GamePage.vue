@@ -80,6 +80,11 @@ async function onStart() {
   if (g) game.value = g
 }
 
+async function onResume() {
+  const g = await api.resumeGame()
+  if (g) game.value = g
+}
+
 async function onAdvanceRound() {
   const g = await api.advanceRound()
   if (g) game.value = g
@@ -91,7 +96,11 @@ async function onPause() {
 }
 
 async function onFinish() {
-  const g = await api.finishGame()
+  const { game: g, winConditionNotMet } = await api.finishGame()
+  if (winConditionNotMet) {
+    alert('Vinstvillkoret är ännu inte uppfyllt. Avancera fler rundor.')
+    return
+  }
   if (g) game.value = g
 }
 
@@ -289,6 +298,7 @@ onBeforeUnmount(async () => {
                   @rename-player="onRenamePlayer"
                   @rename-team="onRenameTeam"
                   @start="onStart"
+                  @resume="onResume"
                   @share="shareLink"
                 />
               </div>
@@ -379,6 +389,9 @@ onBeforeUnmount(async () => {
 
       <!-- Mobile Controls Overlay (FAB style) -->
       <div v-if="game.status === 'Active'" class="mobile-controls mobile-only">
+        <button v-if="state.isCreator.value" @click="onPause" class="fab-secondary" title="Pausa">
+          <span class="material-symbols-outlined">pause</span>
+        </button>
         <button v-if="state.canEdit.value" @click="onAdvanceRound" class="fab-main" title="Nästa runda">
           <span class="material-symbols-outlined">fast_forward</span>
         </button>
@@ -601,6 +614,10 @@ onBeforeUnmount(async () => {
   bottom: 88px;
   right: 24px;
   z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .fab-main {
@@ -619,6 +636,25 @@ onBeforeUnmount(async () => {
 
 .fab-main span {
   font-size: 32px;
+}
+
+.fab-secondary {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface-variant);
+  border: 1px solid var(--color-outline-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 200ms;
+}
+
+.fab-secondary:hover {
+  color: var(--color-secondary);
+  border-color: var(--color-secondary);
 }
 
 /* Utils */

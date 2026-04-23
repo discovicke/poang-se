@@ -21,6 +21,7 @@ const emit = defineEmits<{
   (e: 'renamePlayer', playerId: string, name: string): void
   (e: 'renameTeam', teamId: string, name: string): void
   (e: 'start'): void
+  (e: 'resume'): void
   (e: 'share'): void
 }>()
 
@@ -428,7 +429,7 @@ const canStart = computed(() => props.game.players.length >= 2)
           <button
             v-if="isCreator"
             class="start-match-btn glow-primary"
-            @click="emit('start')"
+            @click="game.currentRound > 1 ? emit('resume') : emit('start')"
             :disabled="!canStart"
           >
             <span class="material-symbols-outlined">play_circle</span>

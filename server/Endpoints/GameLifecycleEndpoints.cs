@@ -89,6 +89,26 @@ public static class GameLifecycleEndpoints
             .WithSummary("Starta spel")
             .WithTags("Spel");
 
+        app.MapPut("/api/games/{id:guid}/finish", async (Guid id, GameLifecycleService svc, CancellationToken ct) =>
+            {
+                var game = await svc.FinishGame(id, ct);
+                if (game is null)
+                    return Results.Conflict(new { error = "win_condition_not_met", message = "Vinstvillkoret är ännu inte uppfyllt. Avancera fler rundor." });
+                return Results.Ok(game.ToFinishResponse());
+            })
+            .WithSummary("Avsluta spel och beräkna vinnare")
+            .WithTags("Spel");
+
+        app.MapPut("/api/games/{id:guid}/resume", async (Guid id, GameLifecycleService svc, CancellationToken ct) =>
+            {
+                var game = await svc.ResumeGame(id, ct);
+                return game is null
+                    ? Results.NotFound()
+                    : Results.Ok(game.ToStatusResponse());
+            })
+            .WithSummary("Återuppta pausat spel utan att återställa rundan")
+            .WithTags("Spel");
+
         app.MapPut("/api/games/{id:guid}/pause", async (Guid id, GameLifecycleService svc, CancellationToken ct) =>
             {
 
@@ -111,20 +131,8 @@ public static class GameLifecycleEndpoints
             .WithSummary("Avancera till nästa runda")
             .WithTags("Spel");
 
-        app.MapPut("/api/games/{id:guid}/finish", async (Guid id, GameLifecycleService svc, CancellationToken ct) =>
-            {
-
-                var game = await svc.FinishGame(id, ct);
-                return game is null
-                    ? Results.NotFound()
-                    : Results.Ok(game.ToFinishResponse());
-            })
-            .WithSummary("Avsluta spel och beräkna vinnare")
-            .WithTags("Spel");
-
         app.MapPut("/api/games/{id:guid}/reset", async (Guid id, HttpContext ctx, GameLifecycleService svc, CancellationToken ct) =>
             {
-
                 var secretStr = ctx.Request.Headers["X-Creator-Secret"].ToString();
                 if (!Guid.TryParse(secretStr, out var secret))
                     return Results.Unauthorized();

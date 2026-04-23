@@ -63,11 +63,11 @@ public class GamePlayerService(AppDbContext db, IHubContext<GameHub> hub, Cancel
     {
         using var ct = tokenLinker.Link(requestCt);
 
-        var game = await db.Games.FindAsync(gameId, ct);
+        var game = await db.Games.FindAsync(new object[] { gameId }, ct);
         if (game is null || game.Status != GameStatus.Waiting)
             return false;
 
-        var player = await db.Players.FindAsync(playerId, ct);
+        var player = await db.Players.FindAsync(new object[] { playerId }, ct);
         if (player is null)
             return false;
 
@@ -81,7 +81,7 @@ public class GamePlayerService(AppDbContext db, IHubContext<GameHub> hub, Cancel
     public async Task<bool> RemovePlayerFromGame(Guid gameId, Guid playerId, CancellationToken requestCt = default)
     {
         using var ct = tokenLinker.Link(requestCt);
-        var game = await db.Games.FindAsync(gameId, ct);
+        var game = await db.Games.FindAsync(new object[] { gameId }, ct);
         if (game is null || game.Status != GameStatus.Waiting)
             return false;
 
@@ -100,7 +100,7 @@ public class GamePlayerService(AppDbContext db, IHubContext<GameHub> hub, Cancel
     public async Task<bool> RenameTeam(Guid gameId, Guid teamId, string newName, CancellationToken requestCt = default)
     {
         using var ct = tokenLinker.Link(requestCt);
-        var game = await db.Games.FindAsync(gameId, ct);
+        var game = await db.Games.FindAsync(new object[] { gameId }, ct);
         if (game is null || game.Status != GameStatus.Waiting)
             return false;
 
@@ -118,7 +118,7 @@ public class GamePlayerService(AppDbContext db, IHubContext<GameHub> hub, Cancel
     public async Task<bool> RemoveTeam(Guid gameId, Guid teamId, CancellationToken requestCt = default)
     {
         using var ct = tokenLinker.Link(requestCt);
-        var game = await db.Games.FindAsync(gameId, ct);
+        var game = await db.Games.FindAsync(new object[] { gameId }, ct);
         if (game is null || game.Status != GameStatus.Waiting)
             return false;
 

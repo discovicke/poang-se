@@ -16,17 +16,22 @@ const emit = defineEmits<{
 }>()
 
 const isLastRound = computed(() => {
-  if (props.game.maxRounds === null) return false
+  if (props.game.gameMode === 'BestOf' || props.game.gameMode === 'FirstTo')
+    return false
+  if (props.game.maxRounds === null)
+    return false
   return props.game.currentRound >= props.game.maxRounds
 })
 
 const nextBtnLabel = computed(() => {
-  if (isLastRound.value) return 'AVSLUTA MATCH'
+  if (isLastRound.value)
+    return 'AVSLUTA MATCH'
   return 'NÄSTA RUNDA'
 })
 
 const nextBtnIcon = computed(() => {
-  if (isLastRound.value) return 'stop'
+  if (isLastRound.value)
+    return 'stop'
   return 'fast_forward'
 })
 
@@ -50,9 +55,9 @@ function handleNext() {
     </div>
 
     <div class="control-actions">
-      <button 
-        v-if="canEdit" 
-        class="primary-btn" 
+      <button
+        v-if="canEdit"
+        class="primary-btn"
         @click="handleNext"
       >
         <span class="material-symbols-outlined">{{ nextBtnIcon }}</span>
@@ -167,11 +172,11 @@ function handleNext() {
     gap: 20px;
     align-items: stretch;
   }
-  
+
   .control-actions {
     justify-content: space-between;
   }
-  
+
   .creator-actions {
     border: none;
     padding: 0;

@@ -103,11 +103,25 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         return game;
     }
 
+    /// <summary>Återupptar ett pausat spel (status → Active) utan att återställa CurrentRound.</summary>
+    public async Task<Game?> ResumeGame(Guid id, CancellationToken requestCt = default)
+    {
+        using var ct = tokenLinker.Link(requestCt);
+        var game = await db.Games.FindAsync(new object[] { id }, ct);
+        if (game == null || game.Status != GameStatus.Waiting)
+            return null;
+
+        game.Status = GameStatus.Active;
+        await db.SaveChangesAsync(ct);
+        await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
+        return game;
+    }
+
     /// <summary>Pausar ett aktivt spel (status → Waiting).</summary>
     public async Task<Game?> PauseGame(Guid id, CancellationToken requestCt = default)
     {
         using var ct = tokenLinker.Link(requestCt);
-        var game = await db.Games.FindAsync(id, ct);
+        var game = await db.Games.FindAsync(new object[] { id }, ct);
         if (game == null || game.Status != GameStatus.Active)
             return null;
 
@@ -154,7 +168,9 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(id.ToString()).SendAsync("GameUpdated");
 
+        // Kontrollera ALLA vinstvillkor när rundan avslutas
         await scoring.CheckRoundBasedWin(id, ct);
+        await scoring.CheckFirstToWin(id, ct);
         return game;
     }
 
@@ -169,6 +185,32 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
             .FirstOrDefaultAsync(g => g.Id == id, ct);
         if (game == null)
             return null;
+
+        // För BestOf/FirstTo-lägen: blockera manuell avslutning om vinstvillkoret inte uppnåtts
+        if (game.GameModeValue.HasValue && game.GameMode is "BestOf" or "FirstTo")
+        {
+            bool winMet;
+
+            if (game.GameMode == "BestOf" || game.GameModeTarget == "rounds")
+            {
+                var roundsToWin = game.GameMode == "BestOf"
+                    ? (game.GameModeValue.Value / 2) + 1
+                    : game.GameModeValue.Value;
+                var wins = scoring.CountRoundWins(game);
+                winMet = wins.Values.Any(w => w >= roundsToWin);
+            }
+            else // FirstTo points
+            {
+                var target = game.GameModeValue.Value;
+                var totals = game.Scores
+                    .GroupBy(s => game.TeamBasedWinner && s.TeamId.HasValue ? s.TeamId!.Value : s.PlayerId)
+                    .Select(g => g.Sum(s => s.Value));
+                winMet = totals.Any(t => t >= target);
+            }
+
+            if (!winMet)
+                return null; // vinstvillkor ej uppfyllt -> endpoint returnerar 409
+        }
 
         game.Status = GameStatus.Finished;
         game.FinishedAt = DateTime.UtcNow;

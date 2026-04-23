@@ -14,9 +14,13 @@ export function useGameState(game: Ref<Game | null>, gameId: string) {
 
   /** Kan aktuell användare redigera poäng? */
   const canEdit = computed(() => {
-    if (!game.value) return false
-    if (!game.value.creatorOnly) return true
-    return isCreator.value
+    if (!game.value)
+      return false
+    if (isCreator.value)
+      return true        // skaparen kan alltid redigera
+    if (!game.value.creatorOnly)
+      return true
+    return false
   })
 
   /** Kan spelare byta claim? Endast när spelet är i väntande status. */

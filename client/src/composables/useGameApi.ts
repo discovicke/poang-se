@@ -163,14 +163,21 @@ export function useGameApi(gameId: string) {
     return fetchGame()
   }
 
+  async function resumeGame(): Promise<Game | null> {
+    await fetch(`${base}/resume`, { method: 'PUT' })
+    return fetchGame()
+  }
+
   async function pauseGame(): Promise<Game | null> {
     await fetch(`${base}/pause`, { method: 'PUT' })
     return fetchGame()
   }
 
-  async function finishGame(): Promise<Game | null> {
-    await fetch(`${base}/finish`, { method: 'PUT' })
-    return fetchGame()
+  async function finishGame(): Promise<{ game: Game | null; winConditionNotMet: boolean }> {
+    const res = await fetch(`${base}/finish`, { method: 'PUT' })
+    if (res.status === 409) return { game: null, winConditionNotMet: true }
+    const game = await fetchGame()
+    return { game, winConditionNotMet: false }
   }
 
   async function advanceRound(): Promise<Game | null> {
@@ -219,6 +226,7 @@ export function useGameApi(gameId: string) {
     addScore,
     updateScore,
     startGame,
+    resumeGame,
     pauseGame,
     finishGame,
     advanceRound,

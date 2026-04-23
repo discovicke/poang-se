@@ -38,7 +38,7 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub, Cance
                 score.CreatedAt
             });
 
-        await CheckFirstToWin(score.GameId, ct);
+        // Vinstvillkor kontrolleras INTE vid poänginmatning, kontroll sker när rundan avslutas (AdvanceRound/FinishGame).
         return score;
     }
 
@@ -71,7 +71,7 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub, Cance
         await db.SaveChangesAsync(ct);
         await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
 
-        await CheckFirstToWin(gameId, ct);
+        // Vinstvillkor kontrolleras INTE vid poänguppdatering, kontroll sker när rundan avslutas.
         return target;
     }
 
