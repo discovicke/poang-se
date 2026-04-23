@@ -1,6 +1,6 @@
-﻿import {ref} from 'vue'
+﻿import { ref } from 'vue'
 import * as signalR from '@microsoft/signalr'
-import type {ClaimInfo} from '../types/game'
+import type { ClaimInfo } from '../types/game'
 
 
 /**
@@ -48,6 +48,12 @@ export function useSignalR(gameId: string) {
     })
 
     conn.on('ClaimRejected', () => {
+      showClaimPicker.value = true
+    })
+
+    conn.on('ClaimRevoked', () => {
+      claim.value = null
+      localStorage.removeItem(`claim:${gameId}`)
       showClaimPicker.value = true
     })
 
