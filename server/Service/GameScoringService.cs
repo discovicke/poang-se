@@ -230,7 +230,8 @@ public class GameScoringService(AppDbContext db, IHubContext<GameHub> hub, Cance
             PlayerName = g.Key,
             Scores = g.OrderBy(s => s.Round)
             .Where(s => s.Round != null)
-            .ToDictionary(s => s.Round!.Value),
+            .GroupBy(s => s.Round!.Value)
+            .ToDictionary(rg => rg.Key, rg => rg.Last()),
             CumulativeScores = Enumerable.Range(1, game.CurrentRound)
             .Select(round =>
             {
