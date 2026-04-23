@@ -201,31 +201,6 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         if (game == null)
             return null;
 
-        // För BestOf/FirstTo-lägen: blockera manuell avslutning om vinstvillkoret inte uppnåtts
-        if (game.GameModeValue.HasValue && game.GameMode is "BestOf" or "FirstTo")
-        {
-            bool winMet;
-
-            if (game.GameMode == "BestOf" || game.GameModeTarget == "rounds")
-            {
-                var roundsToWin = game.GameMode == "BestOf"
-                    ? (game.GameModeValue.Value / 2) + 1
-                    : game.GameModeValue.Value;
-                var wins = scoring.CountRoundWins(game);
-                winMet = wins.Values.Any(w => w >= roundsToWin);
-            }
-            else // FirstTo points
-            {
-                var target = game.GameModeValue.Value;
-                var totals = game.Scores
-                    .GroupBy(s => game.TeamBasedWinner && s.TeamId.HasValue ? s.TeamId!.Value : s.PlayerId)
-                    .Select(g => g.Sum(s => s.Value));
-                winMet = totals.Any(t => t >= target);
-            }
-
-            if (!winMet)
-                return null; // vinstvillkor ej uppfyllt -> endpoint returnerar 409
-        }
 
         game.Status = GameStatus.Finished;
         game.FinishedAt = DateTime.UtcNow;

@@ -173,11 +173,9 @@ export function useGameApi(gameId: string) {
     return fetchGame()
   }
 
-  async function finishGame(): Promise<{ game: Game | null; winConditionNotMet: boolean }> {
-    const res = await fetch(`${base}/finish`, { method: 'PUT' })
-    if (res.status === 409) return { game: null, winConditionNotMet: true }
-    const game = await fetchGame()
-    return { game, winConditionNotMet: false }
+  async function finishGame(): Promise<Game | null> {
+    await fetch(`${base}/finish`, { method: 'PUT' })
+    return fetchGame()
   }
 
   async function advanceRound(): Promise<Game | null> {

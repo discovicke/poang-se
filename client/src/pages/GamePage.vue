@@ -96,11 +96,7 @@ async function onPause() {
 }
 
 async function onFinish() {
-  const { game: g, winConditionNotMet } = await api.finishGame()
-  if (winConditionNotMet) {
-    alert('Vinstvillkoret är ännu inte uppfyllt. Avancera fler rundor.')
-    return
-  }
+  const g = await api.finishGame()
   if (g) game.value = g
 }
 

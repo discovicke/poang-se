@@ -93,7 +93,7 @@ public static class GameLifecycleEndpoints
             {
                 var game = await svc.FinishGame(id, ct);
                 if (game is null)
-                    return Results.Conflict(new { error = "win_condition_not_met", message = "Vinstvillkoret är ännu inte uppfyllt. Avancera fler rundor." });
+                    return Results.NotFound();
                 return Results.Ok(game.ToFinishResponse());
             })
             .WithSummary("Avsluta spel och beräkna vinnare")
