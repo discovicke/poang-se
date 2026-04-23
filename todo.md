@@ -12,8 +12,8 @@
 ### Kravspecifikation
 
 #### Build & Deploy
-- [ ] `npm run build` i root bygger klienten till `wwwroot`
-- [ ] `dotnet run` efter build serverar hela appen
+- [X] `npm run build` i root bygger klienten till `wwwroot`
+- [X] `dotnet run` efter build serverar hela appen
 
 #### Språk
 - [x] Sidan är på svenska som standard

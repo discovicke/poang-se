@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "start": "node scripts/setup-env.js && npm run db:up && npm run dev",
+    "build": "cd client && npm install && npm run build",
+    "serve": "cd server && dotnet run",
     "dev": "npm run db:up && concurrently -k -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd server && dotnet watch run --launch-profile https",
     "dev:client": "cd client && npm run dev",
@@ -16,5 +18,5 @@
   "devDependencies": {
     "concurrently": "^9.1.2"
   }
-}
+} 
 

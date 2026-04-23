@@ -12,6 +12,10 @@ export default ({ mode }: { mode: string }) => {
 
   return defineConfig({
     plugins: [vue()],
+    build: {
+      outDir: '../server/wwwroot',
+      emptyOutDir: true,
+    },
     server: {
       proxy: {
         '/api': {

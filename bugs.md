@@ -5,7 +5,7 @@
 - [X] Vid "först till X" så borde man avancera rundor tills vinstvillkoret är uppnått från serversidan. Nu skapas enbart en runda och spelaren kan avsluta, även om man försöker spela "Först till 4 rundor" t.ex.
 
 ### Multiplayer
-- [ ] När en speladmin väljer att enbart den ska kunna redigera poäng så är allt låst för övriga spelare under ett aktivt spel.
+- [X] När en speladmin väljer att enbart den ska kunna redigera poäng så är allt låst för övriga spelare under ett aktivt spel.
   - Rimligtvis tänker jag att övriga spelare under denna matchform fortfarande borde kunna lägga till och ta bort poäng för sin egen spelarentitet under sagd runda.
   - Spelaren ser enbart rundan spelet är på och redigerar den poängen, spelet avancerar till ny runda och då ser spelaren den nya rundan och kan redigera den poängen.
     - Ska spelaren ha möjlighet att "byta flik" i sidebar/FAB för att se poängmatrisen över hela matchen? Isåfall tänker jag att i "aktiv match"-komponenten ser den spelaren enbart en poängkomponent och knapparna för att avancera, pausa och avsluta ett spel.
@@ -63,9 +63,9 @@ T.ex:
 
 - [X] Lag och spelare ska kunna flytta runt i lobbyn.
 
-- [ ] Om en spelare som är claimad raderas så borde signalR uppdatera och ta bort claim åt en spelare så man kan välja om, just nu så försvinner claimpicker-rutan när en spelare raderas utan möjlighet till omval.
+- [X] Om en spelare som är claimad raderas så borde signalR uppdatera och ta bort claim åt en spelare så man kan välja om, just nu så försvinner claimpicker-rutan när en spelare raderas utan möjlighet till omval.
 
 - [X] Det är lite overflow-problem i aktiva match när det är många spelare, måste ha en overhaul hur poängmatrisen visas i mobilläge när det är många spelare. Jag vill undvika en horisontell scroll, hur ska det lösas? Ska man se runda för runda och ha "kort" liknande claimpickern eller att spelarna hamnar under varandra varje angiven runda som i en lista istället för att stå på horisontell rad?
-  - [ ] Bredden är fucked fortfarande på mobilläge (och delvis desktop), minska den.
+  - [X] Bredden är fucked fortfarande på mobilläge (och delvis desktop), minska den.
 - [X] I mobilläge går det bara att avancera rundor fram till sista rundan, sen är man fast. På sista rundan borde man kunna avsluta matchen.
 - [X] I mobilläge behöver vi en knapp för att pausa matchen.
