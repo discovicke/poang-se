@@ -199,14 +199,13 @@ async function onUpdateScore(playerId: string, round: number, newValue: number) 
 
 function canEditPlayer(playerId: string): boolean {
   if (!game.value) return false
-
+ console.log('creatorOnly:', game.value.creatorOnly)
+  console.log('isAdmin:', state.isAdmin.value)
+  console.log('isCreator:', state.isCreator.value)
   // Spelskaparen kan redigera alla
-  if (state.isCreator.value) return true
+  if (state.isAdmin.value) return true
 
-  // Om spelet inte är låst till creatorOnly, kan jag redigera MIN spelare
-  if (!game.value.creatorOnly) return hub.claim.value?.playerId === playerId
-
-  return false
+  return hub.claim.value?.playerId === playerId
 }
 
 const canSwitchClaim = computed(() => game.value?.status === 'Waiting')

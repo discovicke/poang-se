@@ -1,5 +1,5 @@
-﻿import {computed, type Ref} from 'vue'
-import type {Game, ScoreEntry, ScoreboardRow} from '../types/game'
+﻿import { computed, type Ref } from 'vue'
+import type { Game, ScoreEntry, ScoreboardRow } from '../types/game'
 
 /**
  * Composable härleder all beräknad speldata (scoreboard, score matrix,
@@ -11,16 +11,18 @@ export function useGameState(game: Ref<Game | null>, gameId: string) {
   const isCreator = computed(() => {
     return !!localStorage.getItem(`creator:${gameId}`)
   })
+  // Används för redigeringsrättigheter: är jag skapare ELLER är spelet öppet för alla att redigera?
+  const isAdmin = computed(() => {
+    if (!game.value) return false
+    return isCreator.value || game.value.creatorOnly === true
+  })
 
   /** Kan aktuell användare redigera poäng? */
   const canEdit = computed(() => {
     if (!game.value)
       return false
-    if (isCreator.value)
-      return true        // skaparen kan alltid redigera
-    if (!game.value.creatorOnly)
-      return true
-    return false
+    return isAdmin.value
+
   })
 
   /** Kan spelare byta claim? Endast när spelet är i väntande status. */
@@ -39,7 +41,7 @@ export function useGameState(game: Ref<Game | null>, gameId: string) {
     const max = isRoundBased
       ? game.value.currentRound
       : (game.value.maxRounds ?? 1)
-    return Array.from({length: max}, (_, i) => i + 1)
+    return Array.from({ length: max }, (_, i) => i + 1)
   })
 
   /** Matrix: { [playerId]: { [round]: ScoreEntry } } */
@@ -139,6 +141,7 @@ export function useGameState(game: Ref<Game | null>, gameId: string) {
 
   return {
     isCreator,
+    isAdmin,
     canEdit,
     canSwitchClaim,
     shareUrl,

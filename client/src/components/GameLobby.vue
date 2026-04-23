@@ -268,9 +268,9 @@ const canStart = computed(() => props.game.players.length >= 2)
                   <input type="checkbox" v-model="lobbyCreatorOnly" @change="emitSave">
                   <span class="slider"></span>
                 </div>
-                <span class="switch-title">Endast jag redigerar</span>
+                <span class="switch-title">Alla har skaparens rättigheter</span>
               </div>
-              <p class="switch-desc">Standard är att alla kan redigera sina egna poäng.</p>
+              <p class="switch-desc">Om aktiverad kan alla redigera lobbyn.</p>
             </label>
 
             <label v-if="game.teams.length > 0" class="switch-item mt-md">
