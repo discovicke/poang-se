@@ -446,13 +446,14 @@ onBeforeUnmount(async () => {
 
       <!-- Mobile Controls Overlay (FAB style) -->
       <div v-if="game.status === 'Active'" class="mobile-controls mobile-only">
-        <button v-if="state.isAdmin.value" @click="onPause" class="fab-secondary" title="Pausa">
+        <button v-if="state.isCreator.value && !isLastRound" @click="onPause" class="fab-secondary" tabindex="-1" title="Pausa">
           <span class="material-symbols-outlined">pause</span>
         </button>
         <button
           v-if="state.canEdit.value"
           @click="isLastRound ? onFinish() : onAdvanceRound()"
           class="fab-main"
+          tabindex="-1"
           :class="{ 'fab-main--finish': isLastRound }"
           :title="isLastRound ? 'Avsluta match' : 'Nästa runda'"
         >

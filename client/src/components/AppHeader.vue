@@ -319,6 +319,17 @@ onBeforeUnmount(() => document.removeEventListener('mousedown', onClickOutside))
   transform: translateY(-8px) scale(0.97);
 }
 
+.logo:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
+}
+
 .text-primary { color: var(--color-primary); }
 .text-on-surface-variant { color: var(--color-on-surface-variant); }
 

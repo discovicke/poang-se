@@ -60,6 +60,7 @@ async function createGame() {
               type="text"
               placeholder="t.ex. Fredagsdart"
               autofocus
+              @keyup.enter="createGame"
             />
           </div>
 
@@ -152,6 +153,7 @@ async function createGame() {
   padding: 12px 16px;
   color: var(--color-on-surface);
   width: 100%;
+  color-scheme: dark;
 }
 
 .settings-grid {
@@ -235,6 +237,11 @@ input:checked + .slider:before {
   transform: translateX(20px);
 }
 
+.switch input:focus-visible + .slider {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
+}
+
 .submit-btn {
   background-color: var(--color-primary);
   color: var(--color-on-primary-fixed);
@@ -260,6 +267,11 @@ input:checked + .slider:before {
 .submit-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.submit-btn:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .animate-fade-in {

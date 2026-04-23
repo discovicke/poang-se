@@ -186,4 +186,10 @@ function handleNext() {
 /* Utils */
 .text-primary { color: var(--color-primary); }
 .text-outline { color: var(--color-outline); }
+
+.primary-btn:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
+}
 </style>

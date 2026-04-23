@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ScoreboardRow } from '../types/game'
+import type {ScoreboardRow} from '../types/game'
 
 defineProps<{
   scoreboard: ScoreboardRow[]
@@ -39,7 +39,9 @@ defineProps<{
             <span class="material-symbols-outlined member-icon">group</span>
             {{ scoreboard[0].memberNames.join(' · ') }}
           </p>
-          <p v-else-if="hasTeams" class="label-sm text-on-surface-variant mt-sm">Lag: {{ scoreboard[0].teamName || '–' }}</p>
+          <p v-else-if="hasTeams" class="label-sm text-on-surface-variant mt-sm">Lag: {{
+              scoreboard[0].teamName || '–'
+            }}</p>
         </div>
 
         <div class="leader-score">
@@ -49,12 +51,16 @@ defineProps<{
       </div>
 
       <!-- Rank 2 & 3 (Grid) -->
-      <div v-if="scoreboard.length > 1" class="rank-secondary-grid mt-lg">
+      <div v-if="scoreboard.length > 1" class="rank-secondary-grid mt-lg" :class="{
+        'single-item': scoreboard.length === 2
+      }">
         <div
           v-for="(s, i) in scoreboard.slice(1, 3)"
           :key="s.rowId"
           class="rank-card"
-          :class="i === 0 ? 'rank-2' : 'rank-3'"
+          :class="i === 0
+                  ? 'rank-2'
+                  : 'rank-3'"
         >
           <div class="rank-info">
             <span class="rank-number headline-sm">{{ i === 0 ? '2:a' : '3:e' }}</span>
@@ -79,7 +85,8 @@ defineProps<{
           <div class="row-info">
             <span class="row-number headline-sm text-outline">{{ i + 4 }}</span>
             <span class="headline-sm text-on-surface">{{ s.name }}</span>
-            <span v-if="s.memberNames?.length" class="label-xs text-on-surface-variant ml-md">{{ s.memberNames.join(' · ') }}</span>
+            <span v-if="s.memberNames?.length"
+                  class="label-xs text-on-surface-variant ml-md">{{ s.memberNames.join(' · ') }}</span>
             <span v-else-if="hasTeams" class="label-xs text-on-surface-variant ml-md">({{ s.teamName || '–' }})</span>
           </div>
           <div class="row-score">
@@ -169,6 +176,10 @@ defineProps<{
   .rank-secondary-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .rank-secondary-grid.single-item {
+    grid-template-columns: 1fr;
+  }
 }
 
 .rank-card {
@@ -190,8 +201,13 @@ defineProps<{
   color: var(--color-on-surface-variant);
 }
 
-.rank-2 .rank-number { color: var(--color-tertiary-fixed-dim); }
-.rank-3 .rank-number { color: var(--color-outline); }
+.rank-2 .rank-number {
+  color: var(--color-tertiary-fixed-dim);
+}
+
+.rank-3 .rank-number {
+  color: var(--color-outline);
+}
 
 .rank-score {
   text-align: right;
@@ -247,15 +263,41 @@ defineProps<{
 }
 
 /* Utils */
-.text-on-surface { color: var(--color-on-surface); }
-.text-on-surface-variant { color: var(--color-on-surface-variant); }
-.text-primary { color: var(--color-primary); }
-.text-secondary { color: var(--color-secondary); }
-.text-outline { color: var(--color-outline); }
-.mb-lg { margin-bottom: 24px; }
-.mt-lg { margin-top: 24px; }
-.mt-xs { margin-top: 4px; }
-.ml-md { margin-left: 16px; }
+.text-on-surface {
+  color: var(--color-on-surface);
+}
+
+.text-on-surface-variant {
+  color: var(--color-on-surface-variant);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-secondary {
+  color: var(--color-secondary);
+}
+
+.text-outline {
+  color: var(--color-outline);
+}
+
+.mb-lg {
+  margin-bottom: 24px;
+}
+
+.mt-lg {
+  margin-top: 24px;
+}
+
+.mt-xs {
+  margin-top: 4px;
+}
+
+.ml-md {
+  margin-left: 16px;
+}
 
 .member-names {
   display: flex;

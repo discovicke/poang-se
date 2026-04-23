@@ -246,4 +246,10 @@ const getPlayerColor = (index: number) => {
 .secondary-btn:hover {
   background-color: var(--color-surface-container-high);
 }
+
+.player-choice-card:focus-visible,
+.secondary-btn:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
+}
 </style>

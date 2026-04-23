@@ -70,6 +70,8 @@ function emitSave() {
 /* -- UI State -- */
 const newPlayerName = ref('')
 const newTeamName = ref('')
+const playerInputRef = ref<HTMLInputElement | null>(null)
+const teamInputRef = ref<HTMLInputElement | null>(null)
 
 // Inline editing
 const editingPlayerId = ref<string | null>(null)
@@ -120,12 +122,14 @@ function submitPlayer() {
   if (!newPlayerName.value.trim()) return
   emit('addPlayer', newPlayerName.value.trim(), null)
   newPlayerName.value = ''
+  nextTick(() => playerInputRef.value?.focus())
 }
 
 function submitTeam() {
   if (!newTeamName.value.trim()) return
   emit('addTeam', newTeamName.value.trim())
   newTeamName.value = ''
+  nextTick(() => teamInputRef.value?.focus())
 }
 
 function randomizeTeams() {
@@ -268,9 +272,9 @@ const canStart = computed(() => props.game.players.length >= 2)
                   <input type="checkbox" v-model="lobbyCreatorOnly" @change="emitSave">
                   <span class="slider"></span>
                 </div>
-                <span class="switch-title">Alla har skaparens rättigheter</span>
+                <span class="switch-title">Alla spelare har adminrättigheter</span>
               </div>
-              <p class="switch-desc">Om aktiverad kan alla redigera lobbyn.</p>
+              <p class="switch-desc">Om aktiverad kan alla redigera spelet och allas poäng.</p>
             </label>
 
             <label v-if="game.teams.length > 0" class="switch-item mt-md">
@@ -446,16 +450,16 @@ const canStart = computed(() => props.game.players.length >= 2)
         <!-- Add forms -->
         <div v-if="isCreator" class="add-forms">
           <div class="add-item-bar">
-            <input v-model="newPlayerName" placeholder="Lägg till spelare..." class="primary-input"
+            <input ref="playerInputRef" v-model="newPlayerName" placeholder="Lägg till spelare..." class="primary-input"
                    @keyup.enter="submitPlayer"/>
-            <button @click="submitPlayer" class="add-btn" title="Lägg till spelare">
+            <button @click="submitPlayer" class="add-btn" tabindex="-1" title="Lägg till spelare">
               <span class="material-symbols-outlined">person_add</span>
             </button>
           </div>
           <div class="add-item-bar">
-            <input v-model="newTeamName" placeholder="Lägg till lag..." class="primary-input"
+            <input ref="teamInputRef" v-model="newTeamName" placeholder="Lägg till lag..." class="primary-input"
                    @keyup.enter="submitTeam"/>
-            <button @click="submitTeam" class="add-btn" title="Skapa lag">
+            <button @click="submitTeam" class="add-btn" tabindex="-1" title="Skapa lag">
               <span class="material-symbols-outlined">group_add</span>
             </button>
           </div>
@@ -556,6 +560,11 @@ const canStart = computed(() => props.game.players.length >= 2)
   color: var(--color-on-primary-fixed);
 }
 
+.pill-btn:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
+}
+
 .primary-input, .primary-select {
   background-color: var(--color-surface-container-high);
   border: none;
@@ -566,10 +575,30 @@ const canStart = computed(() => props.game.players.length >= 2)
   width: 100%;
 }
 
+.primary-input:focus-visible,
+.primary-select:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
+}
+
+.primary-input[type='number']::-webkit-inner-spin-button,
+.primary-input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+.primary-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 .switches-list {
   border-top: 1px solid var(--color-outline-variant);
   padding-top: 24px;
   margin-top: 8px;
+}
+
+.switch input:focus-visible + .slider {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .switch-item {
@@ -741,6 +770,11 @@ const canStart = computed(() => props.game.players.length >= 2)
 .start-match-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.start-match-btn:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .share-btn {

@@ -79,14 +79,14 @@ function onManualInput(playerId: string, round: number, event: Event) {
             <span class="round-player-name">{{ p.playerName }}</span>
 
             <div v-if="canEditCell(p.playerId, r)" class="score-input-group">
-              <button class="sc-btn sc-minus" @click="emit('adjust', p.playerId, r, -scoreIncrement)">−</button>
+              <button class="sc-btn sc-minus" tabindex="-1" @click="emit('adjust', p.playerId, r, -scoreIncrement)">−</button>
               <input
                 type="number"
                 :value="getScoreValue(p.playerId, r)"
                 class="manual-input font-headline"
                 @change="onManualInput(p.playerId, r, $event)"
               />
-              <button class="sc-btn sc-plus" @click="emit('adjust', p.playerId, r, scoreIncrement)">+</button>
+              <button class="sc-btn sc-plus" tabindex="-1" @click="emit('adjust', p.playerId, r, scoreIncrement)">+</button>
             </div>
             <span
               v-else
@@ -127,6 +127,11 @@ function onManualInput(playerId: string, round: number, event: Event) {
 .manual-input::-webkit-outer-spin-button,
 .manual-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .manual-input:focus { outline: none; color: var(--color-primary); }
+.manual-input:focus-visible {
+  outline: 2px solid rgba(132, 173, 255, 0.6);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
 
 .sc-btn {
   width: 28px;
