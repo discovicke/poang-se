@@ -68,4 +68,4 @@ T.ex:
 - [X] Det är lite overflow-problem i aktiva match när det är många spelare, måste ha en overhaul hur poängmatrisen visas i mobilläge när det är många spelare. Jag vill undvika en horisontell scroll, hur ska det lösas? Ska man se runda för runda och ha "kort" liknande claimpickern eller att spelarna hamnar under varandra varje angiven runda som i en lista istället för att stå på horisontell rad?
   - [ ] Bredden är fucked fortfarande på mobilläge (och delvis desktop), minska den.
 - [ ] I mobilläge går det bara att avancera rundor fram till sista rundan, sen är man fast. På sista rundan borde man kunna avsluta matchen.
-- [ ] I mobilläge behöver vi en knapp för att pausa matchen.
+- [X] I mobilläge behöver vi en knapp för att pausa matchen.

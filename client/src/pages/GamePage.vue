@@ -25,6 +25,13 @@ const hub = useSignalR(props.id)
 const game = ref<Game | null>(null)
 const state = useGameState(game, props.id)
 
+const isLastRound = computed(() => {
+  if (!game.value) return false
+  if (game.value.gameMode === 'BestOf' || game.value.gameMode === 'FirstTo') return false
+  if (game.value.maxRounds === null) return false
+  return game.value.currentRound >= game.value.maxRounds
+})
+
 /* -- Refresh helper -- */
 async function refresh() {
   const g = await api.fetchGame()
