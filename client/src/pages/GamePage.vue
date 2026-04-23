@@ -617,6 +617,17 @@ onBeforeUnmount(async () => {
   background-color: var(--color-surface-container-high);
 }
 
+/* Extra scroll room so last round card clears the mobile FABs */
+.matrix-section {
+  padding-bottom: 180px;
+}
+
+@media (min-width: 768px) {
+  .matrix-section {
+    padding-bottom: 0;
+  }
+}
+
 /* Mobile FAB */
 .mobile-controls {
   position: fixed;
