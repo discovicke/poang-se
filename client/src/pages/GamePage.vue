@@ -87,11 +87,6 @@ async function onStart() {
   if (g) game.value = g
 }
 
-async function onResume() {
-  const g = await api.resumeGame()
-  if (g) game.value = g
-}
-
 async function onAdvanceRound() {
   const g = await api.advanceRound()
   if (g) game.value = g
@@ -265,18 +260,14 @@ onBeforeUnmount(async () => {
               <span class="label-sm text-on-surface-variant">Pågående Match</span>
               <h2 class="headline-md text-primary">{{ game.name }}</h2>
             </div>
+            
             <div class="header-actions">
               <button class="icon-btn" @click="shareLink" title="Dela"><span
                 class="material-symbols-outlined">share</span> Dela spel
               </button>
             </div>
-          </div>
-
-          <div class="scoreboard-grid">
-            <!-- Left Column: Core Gameplay -->
-            <div class="score-column">
-              <!-- Mobile ClaimPicker (hidden on desktop where sidebar handles it) -->
-              <div class="mobile-claim mobile-only">
+            
+            <div class="mobile-claim mobile-only">
                 <ClaimPicker
                   :players="game.players"
                   :can-switch-claim="canSwitchClaim"
@@ -287,6 +278,14 @@ onBeforeUnmount(async () => {
                   @unclaim="onUnclaim"
                 />
               </div>
+              
+          </div>
+
+          <div class="scoreboard-grid">
+            <!-- Left Column: Core Gameplay -->
+            <div class="score-column">
+              <!-- Mobile ClaimPicker (hidden on desktop where sidebar handles it) -->
+              
               <!-- Show Lobby if Waiting -->
               <div v-if="game.status === 'Waiting'" class="mt-lg">
                 <GameLobby
@@ -301,7 +300,6 @@ onBeforeUnmount(async () => {
                   @rename-player="onRenamePlayer"
                   @rename-team="onRenameTeam"
                   @start="onStart"
-                  @resume="onResume"
                   @share="shareLink"
                 />
               </div>
@@ -372,8 +370,6 @@ onBeforeUnmount(async () => {
                   </div>
                 </div>
               </div>
-
-              <!-- Claim Info -->
               <div class="claim-card mt-lg">
                 <ClaimPicker
                   :players="game.players"
@@ -634,10 +630,6 @@ onBeforeUnmount(async () => {
   bottom: 88px;
   right: 24px;
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
 }
 
 .fab-main {

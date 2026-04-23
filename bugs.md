@@ -63,7 +63,7 @@ T.ex:
 
 - [X] Lag och spelare ska kunna flytta runt i lobbyn.
 
-- [X] Om en spelare som är claimad raderas så borde signalR uppdatera och ta bort claim åt en spelare så man kan välja om, just nu så försvinner claimpicker-rutan när en spelare raderas utan möjlighet till omval.
+- [x] Om en spelare som är claimad raderas så borde signalR uppdatera och ta bort claim åt en spelare så man kan välja om, just nu så försvinner claimpicker-rutan när en spelare raderas utan möjlighet till omval.
 
 - [X] Det är lite overflow-problem i aktiva match när det är många spelare, måste ha en overhaul hur poängmatrisen visas i mobilläge när det är många spelare. Jag vill undvika en horisontell scroll, hur ska det lösas? Ska man se runda för runda och ha "kort" liknande claimpickern eller att spelarna hamnar under varandra varje angiven runda som i en lista istället för att stå på horisontell rad?
   - [X] Bredden är fucked fortfarande på mobilläge (och delvis desktop), minska den.

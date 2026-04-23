@@ -42,6 +42,8 @@ app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.MapFallbackToFile("index.html");
+
 app.Run();
 
 static async Task InitializeDatabase(WebApplication app)

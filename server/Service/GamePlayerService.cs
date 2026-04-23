@@ -90,9 +90,16 @@ public class GamePlayerService(AppDbContext db, IHubContext<GameHub> hub, Cancel
         if (gp is null)
             return false;
 
+        var claimedConnectionId = gp.ClaimedByConnectionId;
+
         db.GamePlayers.Remove(gp);
         await db.SaveChangesAsync(ct);
-        await hub.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
+
+        if (claimedConnectionId != null)
+        {
+            await hub.Clients.Client(claimedConnectionId).SendAsync("ClaimRevoked");
+        }
+        await hub!.Clients.Group(gameId.ToString()).SendAsync("GameUpdated");
         return true;
     }
 
