@@ -392,11 +392,17 @@ onBeforeUnmount(async () => {
 
       <!-- Mobile Controls Overlay (FAB style) -->
       <div v-if="game.status === 'Active'" class="mobile-controls mobile-only">
-        <button v-if="state.isCreator.value" @click="onPause" class="fab-secondary" title="Pausa">
+        <button v-if="state.isCreator.value && !isLastRound" @click="onPause" class="fab-secondary" title="Pausa">
           <span class="material-symbols-outlined">pause</span>
         </button>
-        <button v-if="state.canEdit.value" @click="onAdvanceRound" class="fab-main" title="Nästa runda">
-          <span class="material-symbols-outlined">fast_forward</span>
+        <button
+          v-if="state.canEdit.value"
+          @click="isLastRound ? onFinish() : onAdvanceRound()"
+          class="fab-main"
+          :class="{ 'fab-main--finish': isLastRound }"
+          :title="isLastRound ? 'Avsluta match' : 'Nästa runda'"
+        >
+          <span class="material-symbols-outlined">{{ isLastRound ? 'stop' : 'fast_forward' }}</span>
         </button>
       </div>
     </template>
@@ -639,6 +645,11 @@ onBeforeUnmount(async () => {
 
 .fab-main span {
   font-size: 32px;
+}
+
+.fab-main--finish {
+  background-color: var(--color-error);
+  box-shadow: 0 0 40px rgba(255, 80, 80, 0.4);
 }
 
 .fab-secondary {
