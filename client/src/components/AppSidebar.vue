@@ -1,5 +1,6 @@
 <script setup lang="ts">
 </script>
+
 <template>
   <aside class="app-sidebar">
     <div class="sidebar-header">
@@ -7,30 +8,11 @@
       <p class="version">Poängräkning för de viktigaste tillfällena</p>
     </div>
 
-    <nav class="sidebar-nav">
-      <router-link to="/history" class="nav-item">
-        <span class="material-symbols-outlined">leaderboard</span>
-        Resultat
-      </router-link>
-      <router-link to="/players" class="nav-item">
-        <span class="material-symbols-outlined">groups</span>
-        Spelare
-      </router-link>
-      <router-link to="/stats" class="nav-item">
-        <span class="material-symbols-outlined">insights</span>
-        Statistik
-      </router-link>
-      <router-link to="/settings" class="nav-item">
-        <span class="material-symbols-outlined">tune</span>
-        Inställningar
-      </router-link>
-    </nav>
-
     <div class="sidebar-footer">
-      <button class="primary-btn" @click="$router.push('/new')">
+      <router-link to="/" class="primary-btn">
         <span class="material-symbols-outlined">add_circle</span>
         Ny Match
-      </button>
+      </router-link>
     </div>
   </aside>
 </template>
@@ -46,11 +28,10 @@
   width: 256px;
   position: sticky;
   top: 0;
-  transition: all 300ms ease-in-out;
 }
 
 .sidebar-header {
-  margin-bottom: 40px;
+  flex: 1;
   padding: 0 8px;
 }
 
@@ -75,52 +56,7 @@
   margin-top: 4px;
 }
 
-.sidebar-nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  color: var(--color-on-surface-variant);
-  text-decoration: none;
-  font-family: 'Manrope', sans-serif;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 12px;
-  border-radius: var(--radius-lg);
-  transition: all 300ms ease-in-out;
-}
-
-.nav-item:hover {
-  color: var(--color-on-surface);
-  background-color: var(--color-surface-container-low);
-}
-
-.nav-item.router-link-active {
-  color: var(--color-primary);
-  background-color: var(--color-surface-container-high);
-  font-weight: 700;
-  border-right: 4px solid var(--color-primary);
-  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
-}
-
-.nav-item .material-symbols-outlined {
-  font-size: 24px;
-}
-
-.nav-item.router-link-active .material-symbols-outlined {
-  font-variation-settings: 'FILL' 1;
-}
-
 .sidebar-footer {
-  margin-top: auto;
   padding-top: 24px;
   border-top: 1px solid var(--color-outline-variant);
 }
@@ -130,6 +66,7 @@
   padding: 16px;
   background-color: var(--color-primary);
   color: var(--color-on-primary-fixed);
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
   border-radius: var(--radius-xl);
   border: none;
@@ -138,6 +75,7 @@
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+  text-decoration: none;
   transition: all 200ms ease-out;
 }
 
@@ -150,7 +88,7 @@
   transform: scale(0.95);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .app-sidebar {
     display: none;
   }

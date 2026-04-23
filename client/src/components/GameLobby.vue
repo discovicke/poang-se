@@ -302,7 +302,7 @@ const canStart = computed(() => props.game.players.length >= 2)
           </button>
         </header>
 
-        <div class="hierarchy-view scrollable">
+        <div class="hierarchy-view">
           <!-- Teams as group headers -->
           <div v-for="team in game.teams" :key="team.id" class="team-group">
             <div class="team-header" :style="{ '--team-color': `var(${getTeamColor(team.id)})` }">
@@ -502,7 +502,6 @@ const canStart = computed(() => props.game.players.length >= 2)
 
 .glass-card {
   padding: 32px;
-  height: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -805,18 +804,13 @@ const canStart = computed(() => props.game.players.length >= 2)
   display: flex;
   flex-direction: column;
   gap: 8px;
-  flex: 1;
-  overflow-y: auto;
-  max-height: 520px;
-  padding-right: 4px;
   margin-bottom: 24px;
 }
 
 .team-group {
   display: flex;
   flex-direction: column;
-  border-radius: var(--radius-xl);
-  overflow-y: auto;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--color-outline-variant);
 }
 

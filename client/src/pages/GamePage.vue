@@ -1,11 +1,12 @@
 ﻿<script setup lang="ts">
-import {ref, onMounted, onBeforeUnmount, computed} from 'vue'
+import {ref, onMounted, onBeforeUnmount, computed, watch} from 'vue'
 import type {Game} from '../types/game'
 import {useRouter} from 'vue-router'
 
 import {useGameApi} from '../composables/useGameApi'
 import {useSignalR} from '../composables/useSignalR'
 import {useGameState} from '../composables/useGameState'
+import {useActivityFeed} from '../composables/useActivityFeed'
 
 import PageNotFound from './PageNotFound.vue'
 import ClaimPicker from '../components/ClaimPicker.vue'
@@ -24,6 +25,34 @@ const hub = useSignalR(props.id)
 
 const game = ref<Game | null>(null)
 const state = useGameState(game, props.id)
+const feed = useActivityFeed()
+
+/* -- Feed: watch my own claim changes -- */
+watch(hub.claim, (newClaim, oldClaim) => {
+  if (newClaim?.playerName && !oldClaim) {
+    feed.push('person', `Du spelar som ${newClaim.playerName}`)
+  } else if (!newClaim && oldClaim?.playerName) {
+    feed.push('person_off', `Du lämnade rollen som ${oldClaim.playerName}`)
+  }
+})
+
+/* -- Feed: watch other players connecting/disconnecting -- */
+watch(
+  () => game.value?.players.map(p => ({ id: p.playerId, name: p.playerName, online: !!p.claimedByConnectionId })),
+  (next, prev) => {
+    if (!next || !prev) return
+    for (const p of next) {
+      const was = prev.find(x => x.id === p.id)
+      if (!was) continue
+      const myId = hub.claim.value?.playerId
+      if (p.id === myId)
+        continue
+      if (p.online && !was.online) feed.push('wifi', `${p.name} har anslutit`)
+      if (!p.online && was.online) feed.push('wifi_off', `${p.name} har kopplat från`)
+    }
+  },
+  { deep: true },
+)
 
 const isLastRound = computed(() => {
   if (!game.value) return false
@@ -81,9 +110,38 @@ async function onRenameTeam(teamId: string, name: string) {
   if (g) game.value = g
 }
 
+/* -- Feed: watch game status & round transitions (fires for ALL clients via SignalR) -- */
+watch(
+  () => game.value ? { status: game.value.status, round: game.value.currentRound, winnerId: game.value.winnerId } : null,
+  (next, prev) => {
+    if (!next || !prev) return
+    if (next.status === prev.status && next.round === prev.round) return
+
+    if (prev.status === 'Waiting' && next.status === 'Active') {
+      feed.push('play_circle', 'Matchen har startat!')
+    } else if (prev.status === 'Paused' && next.status === 'Active') {
+      feed.push('play_circle', 'Matchen fortsätter')
+    } else if (next.status === 'Paused' && prev.status === 'Active') {
+      feed.push('pause', 'Matchen är pausad')
+    } else if (next.status === 'Finished' && prev.status !== 'Finished') {
+      const winner = state.winnerName.value
+      feed.push('emoji_events', winner ? `Match slut! Vinnare: ${winner}` : 'Matchen är avslutad')
+    } else if (next.status === 'Waiting' && prev.status === 'Finished') {
+      feed.push('refresh', 'Matchen återställd')
+    } else if (next.status === 'Active' && next.round > prev.round) {
+      feed.push('fast_forward', `Runda ${next.round} påbörjad`)
+    }
+  }
+)
+
 /* -- Game Flow Actions -- */
 async function onStart() {
   const g = await api.startGame()
+  if (g) game.value = g
+}
+
+async function onResume() {
+  const g = await api.resumeGame()
   if (g) game.value = g
 }
 
@@ -146,7 +204,7 @@ function canEditPlayer(playerId: string): boolean {
   if (state.isCreator.value) return true
 
   // Om spelet inte är låst till creatorOnly, kan jag redigera MIN spelare
-  if (!game.value.creatorOnly && hub.claim.value?.playerId === playerId) return true
+  if (!game.value.creatorOnly) return hub.claim.value?.playerId === playerId
 
   return false
 }
@@ -217,6 +275,7 @@ onMounted(async () => {
 
 onBeforeUnmount(async () => {
   await hub.disconnect()
+  feed.clear()
 })
 </script>
 
@@ -260,32 +319,29 @@ onBeforeUnmount(async () => {
               <span class="label-sm text-on-surface-variant">Pågående Match</span>
               <h2 class="headline-md text-primary">{{ game.name }}</h2>
             </div>
-            
             <div class="header-actions">
-              <button class="icon-btn" @click="shareLink" title="Dela"><span
-                class="material-symbols-outlined">share</span> Dela spel
+              <button class="icon-btn" @click="shareLink" title="Dela">
+                <span class="material-symbols-outlined">share</span> Dela spel
               </button>
             </div>
-            
-            <div class="mobile-claim mobile-only">
-                <ClaimPicker
-                  :players="game.players"
-                  :can-switch-claim="canSwitchClaim"
-                  :claim="hub.claim.value"
-                  :show-picker="hub.showClaimPicker.value"
-                  :connection-id="hub.connection.value?.connectionId ?? null"
-                  @claim="onClaim"
-                  @unclaim="onUnclaim"
-                />
-              </div>
-              
           </div>
 
           <div class="scoreboard-grid">
+            <div class="mobile-claim-banner mobile-only">
+              <ClaimPicker
+                :players="game.players"
+                :can-switch-claim="canSwitchClaim"
+                :claim="hub.claim.value"
+                :show-picker="hub.showClaimPicker.value"
+                :connection-id="hub.connection.value?.connectionId ?? null"
+                @claim="onClaim"
+                @unclaim="onUnclaim"
+              />
+            </div>
+
             <!-- Left Column: Core Gameplay -->
             <div class="score-column">
-              <!-- Mobile ClaimPicker (hidden on desktop where sidebar handles it) -->
-              
+
               <!-- Show Lobby if Waiting -->
               <div v-if="game.status === 'Waiting'" class="mt-lg">
                 <GameLobby
@@ -300,6 +356,7 @@ onBeforeUnmount(async () => {
                   @rename-player="onRenamePlayer"
                   @rename-team="onRenameTeam"
                   @start="onStart"
+                  @resume="onResume"
                   @share="shareLink"
                 />
               </div>
@@ -717,7 +774,7 @@ onBeforeUnmount(async () => {
   display: none;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .mobile-only {
     display: none;
   }
@@ -727,7 +784,7 @@ onBeforeUnmount(async () => {
   }
 }
 
-.mobile-claim {
-  margin-bottom: 24px;
+.mobile-claim-banner {
+  grid-column: 1 / -1;
 }
 </style>
