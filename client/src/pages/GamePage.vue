@@ -198,12 +198,14 @@ async function onUpdateScore(playerId: string, round: number, newValue: number) 
 }
 
 function canEditPlayer(playerId: string): boolean {
-  if (!game.value) return false
+  if (!game.value)
+    return false
  console.log('creatorOnly:', game.value.creatorOnly)
   console.log('isAdmin:', state.isAdmin.value)
   console.log('isCreator:', state.isCreator.value)
   // Spelskaparen kan redigera alla
-  if (state.isAdmin.value) return true
+  if (state.isAdmin.value)
+     return true
 
   return hub.claim.value?.playerId === playerId
 }
@@ -345,7 +347,7 @@ onBeforeUnmount(async () => {
               <div v-if="game.status === 'Waiting'" class="mt-lg">
                 <GameLobby
                   :game="game"
-                  :is-creator="state.isCreator.value"
+                  :is-creator="state.isCreator.value || state.isAdmin.value"
                   @save="onSaveSettings"
                   @add-team="onAddTeam"
                   @remove-team="onRemoveTeam"
@@ -380,7 +382,7 @@ onBeforeUnmount(async () => {
                     :readonly="game.status === 'Finished'"
                     :score-matrix="state.scoreMatrix.value"
                     :creator-only="game.creatorOnly"
-                    :is-creator="state.isCreator.value"
+                    :is-creator="state.isCreator.value || state.isAdmin.value"
                     :can-edit-player="canEditPlayer"
                     :get-score-value="state.getScoreValue"
                     :player-display-total="state.playerDisplayTotal"
@@ -402,7 +404,7 @@ onBeforeUnmount(async () => {
                 <GameControls
                   :game="game"
                   :can-edit="state.canEdit.value"
-                  :is-creator="state.isCreator.value"
+                  :is-creator="state.isCreator.value || state.isAdmin.value"
                   @advance-round="onAdvanceRound"
                   @pause="onPause"
                   @finish="onFinish"
@@ -444,7 +446,7 @@ onBeforeUnmount(async () => {
 
       <!-- Mobile Controls Overlay (FAB style) -->
       <div v-if="game.status === 'Active'" class="mobile-controls mobile-only">
-        <button v-if="state.isCreator.value && !isLastRound" @click="onPause" class="fab-secondary" title="Pausa">
+        <button v-if="state.isAdmin.value" @click="onPause" class="fab-secondary" title="Pausa">
           <span class="material-symbols-outlined">pause</span>
         </button>
         <button
@@ -674,7 +676,7 @@ onBeforeUnmount(async () => {
   padding-bottom: 180px;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .matrix-section {
     padding-bottom: 0;
   }
@@ -683,7 +685,7 @@ onBeforeUnmount(async () => {
 /* Mobile FAB */
 .mobile-controls {
   position: fixed;
-  bottom: 88px;
+  bottom: 40px;
   right: 24px;
   z-index: 100;
 }

@@ -165,7 +165,7 @@ defineProps<{
   gap: 24px;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .rank-secondary-grid {
     grid-template-columns: 1fr 1fr;
   }
