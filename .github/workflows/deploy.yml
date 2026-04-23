@@ -21,10 +21,10 @@ jobs:
           npm ci
           npm run build
 
-      - name: Copy frontend to wwwroot
-        run: |
-          mkdir -p server/wwwroot
-          cp -r client/dist/. server/wwwroot/
+     # - name: Copy frontend to wwwroot
+    #    run: |
+     #     mkdir -p server/wwwroot
+    #      cp -r client/dist/. server/wwwroot/
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
