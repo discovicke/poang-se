@@ -270,7 +270,7 @@ const canStart = computed(() => props.game.players.length >= 2)
                 </div>
                 <span class="switch-title">Alla har skaparens rättigheter</span>
               </div>
-              <p class="switch-desc">Om aktiverad kan alla redigera lobbyn.</p>
+              <p class="switch-desc">Om aktiverad kan alla redigera.</p>
             </label>
 
             <label v-if="game.teams.length > 0" class="switch-item mt-md">
