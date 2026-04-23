@@ -73,9 +73,20 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
         if (dto.TeamBasedWinner.HasValue)
             game.TeamBasedWinner = dto.TeamBasedWinner.Value;
         if (dto.GameMode != null)
+        {
             game.GameMode = dto.GameMode;
+            // BestOf/FirstTo: rundantalet växer organiskt – nolla MaxRounds
+            if (dto.GameMode is "BestOf" or "FirstTo")
+                game.MaxRounds = null;
+        }
         if (dto.GameModeValue.HasValue)
-            game.GameModeValue = dto.GameModeValue.Value;
+        {
+            var val = dto.GameModeValue.Value;
+            // BestOf kräver udda tal: jämna avrundas upp
+            if (game.GameMode == "BestOf" && val % 2 == 0)
+                val++;
+            game.GameModeValue = val;
+        }
         if (dto.GameModeTarget != null)
             game.GameModeTarget = dto.GameModeTarget;
         if (dto.StartingScore.HasValue)
@@ -157,7 +168,11 @@ public class GameLifecycleService(AppDbContext db, IHubContext<GameHub> hub, Gam
                 : game.GameModeValue.Value;
             var roundWins = scoring.CountRoundWins(game);
             if (roundWins.Values.Any(w => w >= roundsToWin))
+            {
+                // Vinstvillkoret är uppfyllt – avsluta spelet istället för att avancera runda
+                await scoring.CheckRoundBasedWin(id, ct);
                 return game;
+            }
         }
         else if (game.MaxRounds.HasValue && game.CurrentRound >= game.MaxRounds.Value)
         {

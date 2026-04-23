@@ -2,7 +2,7 @@
 ### Matchrundor
 - [x] Vid "först till X" så sätts rundor till 10 rundor, det bör rimligtvis bara skapas en runda och sedan plussa på extrarundor tills vinstvillkoret är uppnått.
 - [ ] När man pausar ett spel och har avancerat rundor så startar man på runda 1 igen. Poängen är kvar men staten håller inte koll på vilken runda som det pausades på.
-- [ ] Vid "först till X" så borde man avancera rundor tills vinstvillkoret är uppnått från serversidan. Nu skapas enbart en runda och spelaren kan avsluta, även om man försöker spela "Först till 4 rundor" t.ex.
+- [X] Vid "först till X" så borde man avancera rundor tills vinstvillkoret är uppnått från serversidan. Nu skapas enbart en runda och spelaren kan avsluta, även om man försöker spela "Först till 4 rundor" t.ex.
 
 ### Multiplayer
 - [ ] När en speladmin väljer att enbart den ska kunna redigera poäng så är allt låst för övriga spelare under ett aktivt spel.

@@ -51,7 +51,11 @@ watch(() => props.game, (g) => {
 function emitSave() {
   if (!props.isCreator) return
   emit('save', {
-    maxRounds: lobbyMaxRounds.value,
+    // Skicka null för maxRounds när spelläge är BestOf eller FirstTo
+    // (rundantalet ska växa organiskt tills vinstvillkoret uppfylls)
+    maxRounds: lobbyGameMode.value
+      ? null
+      : lobbyMaxRounds.value,
     scoreIncrement: lobbyIncrement.value,
     lowerIsBetter: lobbyLowerIsBetter.value,
     creatorOnly: lobbyCreatorOnly.value,
@@ -102,6 +106,14 @@ function saveTeamName(id: string) {
 function onTeamSelectChange(playerId: string, event: Event) {
   const val = (event.target as HTMLSelectElement).value
   emit('assignTeam', playerId, val || null)
+}
+
+function onGameModeValueChange() {
+  // BestOf kräver udda tal jämna avrundas upp till närmaste udda
+  if (lobbyGameMode.value === 'BestOf' && lobbyGameModeValue.value != null && lobbyGameModeValue.value % 2 === 0) {
+    lobbyGameModeValue.value = lobbyGameModeValue.value + 1
+  }
+  emitSave()
 }
 
 function submitPlayer() {
@@ -222,10 +234,30 @@ const canStart = computed(() => props.game.players.length >= 2)
           <div v-if="lobbyGameMode" class="setting-group animate-slide">
             <label class="label-sm">
               {{
-                lobbyGameMode === 'BestOf' ? 'Antal matcher (X)' : (lobbyGameModeTarget === 'rounds' ? 'Antal vinster' : 'Poängmål')
+                lobbyGameMode === 'BestOf'
+                  ? 'Antal matcher'
+                  : (lobbyGameModeTarget === 'rounds'
+                    ? 'Antal vinster'
+                    : 'Poängmål')
               }}
             </label>
-            <input type="number" v-model.number="lobbyGameModeValue" @change="emitSave" class="primary-input"/>
+            <p v-if="lobbyGameMode === 'BestOf'" class="hint-text">Måste vara ett udda tal, t.ex. 3, 5, 7.</p>
+            <input
+              type="number"
+              v-model.number="lobbyGameModeValue"
+              :step="lobbyGameMode === 'BestOf'
+              ? 2
+              : 1"
+              :min="lobbyGameMode === 'BestOf'
+              ? 1
+              : 1"
+              @change="onGameModeValueChange"
+              class="primary-input"
+            />
+            <p v-if="lobbyGameMode === 'BestOf' && lobbyGameModeValue != null && lobbyGameModeValue % 2 === 0"
+               class="hint-text error-hint">
+              Bäst av X kräver ett udda tal. Justerat till {{ lobbyGameModeValue + 1 }}.
+            </p>
           </div>
 
           <!-- Admin Toggles -->
@@ -333,10 +365,12 @@ const canStart = computed(() => props.game.players.length >= 2)
                     <option value="">Utan lag</option>
                     <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
                   </select>
-                  <button v-if="editingPlayerId !== p.playerId" @click="startEditPlayer(p.playerId, p.playerName)" class="micro-btn" title="Byt namn">
+                  <button v-if="editingPlayerId !== p.playerId" @click="startEditPlayer(p.playerId, p.playerName)"
+                          class="micro-btn" title="Byt namn">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
-                  <button v-if="editingPlayerId !== p.playerId" @click="emit('removePlayer', p.playerId)" class="micro-btn danger" title="Ta bort">
+                  <button v-if="editingPlayerId !== p.playerId" @click="emit('removePlayer', p.playerId)"
+                          class="micro-btn danger" title="Ta bort">
                     <span class="material-symbols-outlined">close</span>
                   </button>
                 </div>
@@ -387,10 +421,12 @@ const canStart = computed(() => props.game.players.length >= 2)
                     <option value="">Utan lag</option>
                     <option v-for="t in game.teams" :key="t.id" :value="t.id">{{ t.name }}</option>
                   </select>
-                  <button v-if="editingPlayerId !== p.playerId" @click="startEditPlayer(p.playerId, p.playerName)" class="micro-btn" title="Byt namn">
+                  <button v-if="editingPlayerId !== p.playerId" @click="startEditPlayer(p.playerId, p.playerName)"
+                          class="micro-btn" title="Byt namn">
                     <span class="material-symbols-outlined">edit</span>
                   </button>
-                  <button v-if="editingPlayerId !== p.playerId" @click="emit('removePlayer', p.playerId)" class="micro-btn danger" title="Ta bort">
+                  <button v-if="editingPlayerId !== p.playerId" @click="emit('removePlayer', p.playerId)"
+                          class="micro-btn danger" title="Ta bort">
                     <span class="material-symbols-outlined">close</span>
                   </button>
                 </div>
@@ -429,11 +465,17 @@ const canStart = computed(() => props.game.players.length >= 2)
           <button
             v-if="isCreator"
             class="start-match-btn glow-primary"
-            @click="game.currentRound > 1 ? emit('resume') : emit('start')"
+            @click="game.currentRound > 1
+            ? emit('resume')
+            : emit('start')"
             :disabled="!canStart"
           >
             <span class="material-symbols-outlined">play_circle</span>
-            {{ game.currentRound > 1 ? 'FORTSÄTT MATCH' : 'STARTA MATCH' }}
+            {{
+              game.currentRound > 1
+                ? 'FORTSÄTT MATCH'
+                : 'STARTA MATCH'
+            }}
           </button>
         </div>
       </div>
@@ -951,6 +993,15 @@ const canStart = computed(() => props.game.players.length >= 2)
 
 .slot-empty.muted {
   opacity: 0.35;
+}
+
+.hint-text {
+  font-size: 11px;
+  color: var(--color-on-surface-variant);
+}
+
+.error-hint {
+  color: var(--color-error);
 }
 
 /* Add forms */
