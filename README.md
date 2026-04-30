@@ -53,6 +53,6 @@ npm run db:logs
 - `scripts/setup-env.js` - skapar `.env` fran `.env.example` vid behov
 
 ## Medlemmar
-- [Viktor Johansson](!https://www.github.com/discovicke)
-- [Linus Lönn](!https://www.github.com/discotomten)
-- [Jesper Flodkvist Olofsson](!https://www.github.com/jespernapp)
+- [Viktor Johansson](https://www.github.com/discovicke)
+- [Linus Lönn](https://www.github.com/discotomten)
+- [Jesper Flodkvist Olofsson](https://www.github.com/jespernapp)
