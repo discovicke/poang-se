@@ -1,4 +1,4 @@
-# Poang
+# Poäng.se
 
 Ett webbprojekt för spelhantering med realtidsuppdateringar.
 Frontend ligger i Vue och backend i ASP.NET Core, med SQL Server i Docker för lokal utveckling.
@@ -51,3 +51,8 @@ npm run db:logs
 - `server/` - API, SignalR och affarslogik
 - `docker-compose.yml` - lokal SQL Server
 - `scripts/setup-env.js` - skapar `.env` fran `.env.example` vid behov
+
+## Medlemmar
+- (Viktor Johansson)[!https://www.github.com/discovicke]
+- (Linus Lönn)[!https://www.github.com/discotomten]
+- (Jesper Flodkvist Olofsson)[!https://www.github.com/jespernapp]
